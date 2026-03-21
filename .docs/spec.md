@@ -1,0 +1,961 @@
+# groa 要件定義書
+
+> 大量のツイートデータから人格プロファイルを抽出し、その人物「らしい」新規テキストを生成するパイプラインツール
+
+**Name**: groa
+**Version**: 0.1.0-draft
+**Language**: TypeScript (Node.js / ブラウザ)
+**Last Updated**: 2026-03-22
+**関連文書**:
+- [設計仕様書 (design-spec.md)](./design-spec.md) — 実装の「どう作るか (How)」を定義
+- [設計根拠書 (design-rationale.md)](./design-rationale.md) — 各工程の学術的根拠
+
+---
+
+## 0. 文書の位置づけ
+
+本文書は groa の「何を実現するか (What)」を定義する要件定義書である。
+- 実装の詳細（TypeScriptインターフェース、ディレクトリ構成、プロンプト設計等）は design-spec.md を参照
+- 各工程の学術的根拠は design-rationale.md を参照
+- 仕様書に記載のない機能追加や設計変更は確認を取ること
+
+---
+
+## 1. プロダクト概要
+
+### 1.1 目的と概要
+
+groa（北欧神話の女預言者Gróaに由来。死者に呪文を唱え、失われた声を蘇らせる存在）は、大量のツイートデータから人格プロファイルを抽出し、その人物「らしい」新規テキストを生成するパイプラインツールである。
+
+groaはハイブリッドパイプライン（ローカル統計分析 + LLM意味理解）を採用する。文体の定量的特徴（語尾パターン、句読点使用、文字種比率等）はローカルの形態素解析で確定的に抽出し、意味理解が必要な特徴（皮肉の検出、論理展開パターンの命名、代表ツイートの選定等）のみをLLMに委ねる。この分離により、LLMへのプロンプトが短縮され、コストが削減され、分析結果の再現性が向上する。
+
+### 1.2 ターゲットユーザー
+
+以下の2パターンを想定する:
+
+1. **個人ユーザー**: 自分のツイートデータから文体プロファイルを構築し、テキスト生成に活用したい個人（CLI/Webともに利用）
+2. **開発者**: キャラクター生成やペルソナ分析ツールを必要とする開発者（CLIを中心に利用、APIキー管理に抵抗なし）
+
+**前提スキル**: JSONファイルの準備ができること。CLI版はターミナル操作、Web版はブラウザ操作。
+
+### 1.3 ユースケース
+
+**UC-1: CLIでプロファイル構築→テキスト生成**
+
+1. ツイートデータ（JSON）を用意
+2. `groa init` で設定ファイルを生成、バックエンド（api/claude-code）を選択
+3. `groa build tweets.json` でプロファイル構築（Step 0-5、進捗表示あり）
+4. `groa inspect` でPersonaDocumentの内容を確認
+5. `groa generate "AIの未来"` でテキスト生成（Step 6-8）
+6. 生成結果とauthenticityスコアを確認
+
+**UC-2: Webでプロファイル構築→テキスト生成**
+
+1. ブラウザでgroaを開き、APIキーを入力（メモリのみ保持）
+2. ツイートデータ（JSON）をファイルアップロード
+3. 「Build」でプロファイル構築（リアルタイム進捗表示）
+4. 「Generate」でトピックを入力しテキスト生成
+5. 生成結果と評価スコアを確認
+
+### 1.4 スコープ外（v0.1.0）
+
+以下の機能はv0.1.0のスコープ外とする:
+
+- Twitter/X公式エクスポートからの変換ツール（フィールドマッピングの案内のみ）
+- マルチモーダル入力（画像、動画の分析）
+- LoRAファインチューニング
+- リアルタイム対話モード
+- 複数人物のブレンド
+- 差分更新（ツイート追加時の増分プロファイル更新）
+- CORSプロキシの同梱
+- Embeddingの次元圧縮
+- Embeddingレス構成（Embedding未生成でのfew-shot検索）
+- Pro/Maxモデルの定額コスト追跡
+
+---
+
+## 2. データモデル
+
+TypeScriptのインターフェース定義は design-spec.md §2 を参照。
+
+### 2.1 入力データ
+
+**Tweet**
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| id | TweetId (string) | ツイートの一意識別子 |
+| text | string | ツイート本文 |
+| timestamp | Timestamp (number) | Unix epoch ミリ秒 |
+| isRetweet | boolean | リツイートか否か |
+| hasMedia | boolean | メディア添付の有無 |
+| replyTo | TweetId \| null | リプライ先のツイートID |
+
+**TweetCorpus**
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| tweets | Tweet[] | 前処理済みツイート群 |
+| metadata | CorpusMetadata | コーパスのメタ情報 |
+
+**CorpusMetadata**
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| totalCount | number | 処理前の総ツイート数 |
+| dateRange | { start: Timestamp, end: Timestamp } | データの日付範囲 |
+| filteredCount | number | フィルタで除外された件数 |
+
+### 2.2 中間データ
+
+**カテゴリ・センチメント定義**
+
+| 値 | 型 |
+|---|---|
+| "tech" \| "daily" \| "opinion" \| "emotion" \| "creative" \| "other" | Category |
+| "positive" \| "negative" \| "neutral" \| "mixed" | Sentiment |
+
+**TaggedTweet**
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| tweet | Tweet | 元ツイート |
+| category | Category | 分類カテゴリ |
+| sentiment | Sentiment | 感情ラベル |
+| topics | string[] | トピックタグ（最大5件） |
+
+**TopicCluster**
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| category | Category | クラスタのカテゴリ |
+| tweets | TaggedTweet[] | クラスタ内ツイート |
+| tweetCount | number | ツイート数 |
+
+**ClusterAnalysis**
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| category | Category | 分析対象のカテゴリ |
+| tweetCount | number | 分析したツイート数 |
+| portrait | string | このモードにおける人物の振る舞い（Markdown、500-1500字） |
+| representativeTweets | TaggedTweet[] | 代表ツイート（最大10件） |
+| attitudePatterns | AttitudePattern[] | 態度パターン（3-5件） |
+
+**AttitudePattern**
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| name | string | パターン名（例: "断言してから留保を入れる"） |
+| description | string | パターンの説明 |
+| exampleTweetIds | TweetId[] | パターンが現れるツイートのID |
+| sourceCategories | Category[] | このパターンの由来モード |
+
+**StyleStats**
+
+文字数分布:
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| lengthDistribution.mean | number | 平均文字数 |
+| lengthDistribution.median | number | 中央値 |
+| lengthDistribution.stdDev | number | 標準偏差 |
+| lengthDistribution.percentiles | { p10, p25, p75, p90: number } | パーセンタイル |
+
+句読点パターン:
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| punctuation.sentenceEnders | Record<string, number> | 文末記号の分布 |
+| punctuation.commaStyle | Record<string, number> | 読点の種類と頻度 |
+| punctuation.bracketStyles | Record<string, number> | 括弧の種類と頻度 |
+
+語尾パターン:
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| sentenceEndings | { ending: string, frequency: number, exampleTweetIds: TweetId[] }[] | 語尾パターン上位20件。各パターンに実例ツイートID 3件を紐づけ |
+
+文字種比率:
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| charTypeRatio.hiragana | number | ひらがな比率 |
+| charTypeRatio.katakana | number | カタカナ比率 |
+| charTypeRatio.kanji | number | 漢字比率 |
+| charTypeRatio.ascii | number | ASCII比率 |
+| charTypeRatio.emoji | number | 絵文字比率 |
+
+絵文字使用:
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| topEmoji | { emoji: string, count: number }[] | 上位10件 |
+
+頻出語彙:
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| topTokens | { token: string, count: number, isNoun: boolean }[] | 上位50件（ストップワード除外） |
+
+頻出n-gram:
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| topNgrams.bigrams | { ngram: string, count: number }[] | 2-gram 上位20件 |
+| topNgrams.trigrams | { ngram: string, count: number }[] | 3-gram 上位20件 |
+
+投稿時間帯分布:
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| hourlyDistribution | number[] | 24要素の配列（各時間帯の投稿比率） |
+
+改行統計:
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| lineBreaks.tweetsWithBreaks | number | 改行を含むツイートの割合 |
+| lineBreaks.avgBreaksPerTweet | number | 1ツイートあたりの平均改行数 |
+
+共有率:
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| sharingRate.urlRate | number | URL含有率 |
+| sharingRate.mediaRate | number | メディア含有率 |
+
+リプライ率:
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| replyRate | number | リプライの割合 |
+
+メタ情報:
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| sampleSize | number | 分析対象のツイート件数 |
+| analyzedAt | Timestamp | 分析実行日時 |
+
+### 2.3 出力データ
+
+**PersonaDocument**
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| version | string | ドキュメントバージョン |
+| createdAt | Timestamp | 作成日時 |
+| body | string | ペルソナ記述本文（Markdown）。LLMのシステムプロンプトにそのまま使用可能。構成: (1)人物像サマリ (2)文体ルール (3)トピック別モード記述 (4)思考の癖 (5)感情表現の特徴 (6)語彙の特徴 |
+| voiceBank | VoiceBankEntry[] | 代表ツイート20-30件 |
+| attitudePatterns | AttitudePattern[] | 態度パターン一覧（全クラスタから統合、モード情報付き） |
+| contradictions | string[] | 検出した矛盾の記録（モード間矛盾は保持、解消しない） |
+| sourceStats | CorpusMetadata | 元データの統計情報 |
+
+**VoiceBankEntry**
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| tweet | TaggedTweet | 代表ツイート |
+| selectionReason | string | 選定理由 |
+
+**GeneratedText**
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| text | string | 生成されたテキスト |
+| topic | string | 生成トピック |
+| evaluation | EvaluationResult \| null | 評価結果（生成直後はnull、Step 8完了後に付与） |
+| fewShotIds | TweetId[] | few-shotに使用したツイートID |
+| modelUsed | ModelIdString (string) | 使用したモデルID |
+
+**EvaluationResult**
+
+| フィールド | 型 | 説明 | 範囲 |
+|---|---|---|---|
+| authenticity | number | 同一人物が書いたように読めるか | 0.0-10.0 |
+| styleNaturalness | number | 文体の自然さ | 0.0-10.0 |
+| attitudeConsistency | number | 態度・トーンの一致度 | 0.0-10.0 |
+| rationale | string | 評価の根拠（自然言語） | — |
+
+### 2.4 Embeddingデータ
+
+**TweetEmbedding**
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| tweetId | TweetId | ツイートID |
+| vector | 32bit浮動小数点配列 | Embeddingベクトル（Float32Array） |
+| dimensions | number | ベクトルの次元数（384） |
+
+**EmbeddingIndex**
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| embeddings | TweetEmbedding[] | 全ツイートのEmbedding |
+| model | ModelIdString (string) | 使用したモデルID |
+
+---
+
+## 3. パイプライン概要
+
+### 3.1 全体データフロー図
+
+```
+Tweet[] (入力)
+  │
+  ▼
+[Step 0: 前処理] ─────────────────────────────► TweetCorpus
+  │                                                  │
+  ▼                                                  ▼
+[Step 1: 統計的文体分析] ─────────────────────► StyleStats
+  │                                                  │
+  ▼                                                  │
+[Step 2: 分類・タグ付け] ─────────────────────► TaggedTweet[]
+  │                                                  │
+  ▼                                                  │
+[Step 3: クラスタ分析] ◄── StyleStats ────────► ClusterAnalysis[]
+  │                                                  │
+  ▼                                                  │
+[Step 4: ペルソナ合成] ◄── StyleStats, CorpusMetadata ─► PersonaDocument
+  │
+  ▼
+[Step 5: Embedding生成] ──────────────────────► EmbeddingIndex
+  ║
+  ║  ═══════ ビルドフェーズ完了 ═══════
+  ║
+  ▼
+[Step 6: 類似検索] ◄── トピック ──────────────► TaggedTweet[] (生成用 + 評価用)
+  │
+  ▼
+[Step 7: テキスト生成] ◄── PersonaDocument ──► GeneratedText
+  │
+  ▼
+[Step 8: 品質評価] ◄── 元ツイート ────────────► EvaluationResult
+```
+
+Step 0-1 はローカル処理（LLM不使用、コスト$0）。Step 5-6 もローカル計算（コスト$0）。
+
+### 3.2 フェーズ区分
+
+- **ビルドフェーズ (Step 0-5)**: プロファイル構築。`groa build` で一括実行
+- **ジェネレートフェーズ (Step 6-8)**: テキスト生成と評価。`groa generate` で一括実行
+- ビルドフェーズの成果物（PersonaDocument + EmbeddingIndex）は永続化され、ジェネレートフェーズで繰り返し利用可能
+
+### 3.3 ステップ一覧表
+
+| Step | 名称 | 入力 | 出力 | LLMモデル | コスト概算(api) |
+|------|------|------|------|-----------|----------------|
+| 0 | 前処理 | Tweet[] | TweetCorpus | なし | $0 |
+| 1 | 統計的文体分析 | TweetCorpus | StyleStats | なし | $0 |
+| 2 | 分類・タグ付け | TweetCorpus | TaggedTweet[] | Haiku (Batch) | ~$0.17 |
+| 3 | クラスタ分析 | TaggedTweet[], StyleStats | ClusterAnalysis[] | Sonnet | ~$1.50 |
+| 4 | ペルソナ合成 | ClusterAnalysis[], StyleStats, CorpusMetadata | PersonaDocument | Opus | ~$0.50 |
+| 5 | Embedding生成 | TweetCorpus | EmbeddingIndex | multilingual-e5-small（ローカル） | $0 |
+| 6 | 類似検索 | トピック, EmbeddingIndex, TaggedTweet[] | TaggedTweet[] (2*topK件) | multilingual-e5-small（ローカル、クエリのみ） | $0 |
+| 7 | テキスト生成 | PersonaDocument, TaggedTweet[] (few-shot), トピック | GeneratedText | Sonnet + Prompt Caching | ~$0.009/件 |
+| 8 | 品質評価 | GeneratedText, TaggedTweet[] (比較用), PersonaDocument | EvaluationResult | Sonnet | ~$0.01/件 |
+
+---
+
+## 4. 機能要件: ビルドフェーズ
+
+各ステップには要件IDを付与。実装詳細（プロンプト設計、関数シグネチャ等）は design-spec.md §4 を参照。
+
+### 4.0 REQ-PRE: 前処理
+
+**責務**: 生ツイートデータのクリーニングとフィルタリング
+**入力**: Tweet[]
+**出力**: TweetCorpus
+**LLM**: 不使用
+
+**フィルタリング条件**:
+- リツイートを除外
+- テキストがURLのみで構成されるツイートを除外
+- 正規化後のテキストが所定の最小文字数（デフォルト5文字）未満のツイートを除外
+- 設定で指定された定型パターン（ボイラープレート）に一致するツイートを除外
+
+**テキスト正規化ルール**:
+- URLを `[URL]` プレースホルダに置換
+- メンション（@ユーザー名）を除去
+- 連続する空白文字を単一スペースに正規化し、前後の空白を除去
+
+フィルタは合成可能な設計とし、新規フィルタの追加が既存コードの変更を要さないこと。
+
+設計根拠: [design-rationale.md §Step 0](./design-rationale.md) を参照
+
+### 4.1 REQ-STAT: 統計的文体分析
+
+**責務**: ツイート群から文体の定量的特徴をローカルで抽出する
+**入力**: TweetCorpus
+**出力**: StyleStats
+**LLM**: **不使用**
+**依存ライブラリ**: kuromoji.js（形態素解析）
+
+**抽出すべき特徴量**:
+1. 文字数分布（平均・中央値・標準偏差・パーセンタイル）
+2. 句読点パターン（文末記号・読点・括弧の種類と出現頻度）
+3. 語尾パターン（形態素解析ベース、上位20件、各パターンに実例ツイートID 3件紐づけ）
+4. 文字種比率（ひらがな/カタカナ/漢字/ASCII/絵文字）
+5. 絵文字使用（上位10件）
+6. 頻出語彙（名詞・動詞・形容詞、上位50件、ストップワード除外）
+7. 頻出n-gram（2-gram/3-gram、各上位20件）
+8. 投稿時間帯分布（24時間）
+9. 構造分析（改行頻度、URL/メディア共有率、リプライ率）
+
+**性能特性**:
+
+| 指標 | 値 |
+|------|-----|
+| 処理時間（10,000件、Node.js） | 30秒以内 |
+| コスト | $0 |
+| 再現性 | 完全（同一入力→同一出力） |
+| Web版 | kuromoji.js辞書は約20MB (gzip)、展開後約50MB。Web Workerでの実行が必要 |
+
+設計根拠: [design-rationale.md §Step 1](./design-rationale.md) を参照
+
+### 4.2 REQ-CLS: 分類・タグ付け
+
+**責務**: 各ツイートへのカテゴリ・感情ラベルの付与
+**入力**: TweetCorpus
+**出力**: TaggedTweet[]
+**LLM**: Haiku
+**temperature**: 0.0
+**API方式**: Batch API（apiバックエンド時、50%割引） / 逐次実行（claude-codeバックエンド時）
+
+**要件**:
+- 1回のリクエストに50件ずつ含める
+- 出力はJSON形式とし、Zodスキーマでバリデーションする
+- カテゴリとセンチメントは定義済みリテラル値のみ許容
+
+**失敗時の振る舞い**:
+- パースまたはバリデーション失敗のツイート → `category: "other"`, `sentiment: "neutral"` でフォールバック
+- フォールバック発生時はログに警告
+- 失敗率が10%を超えた場合、バッチ全体をリトライ（最大1回）
+
+設計根拠: [design-rationale.md §Step 2](./design-rationale.md) を参照
+
+### 4.3 REQ-ANA: クラスタ分析
+
+**責務**: カテゴリ別にグルーピングされたツイート群から、各モードにおける人格特徴を抽出する
+**入力**: TaggedTweet[], StyleStats
+**出力**: ClusterAnalysis[]
+**LLM**: Sonnet
+**temperature**: 0.0
+
+**クラスタ分割戦略**:
+- Step 2で付与された category でグルーピング
+- 50件未満のカテゴリは "other" に統合
+- 3000件超のカテゴリは時系列で分割し、複数のClusterAnalysisを生成後に統合
+
+**クラスタ固有StyleStatsの再集計**:
+- 各クラスタについて、クラスタ内ツイートに限定したStyleStatsのサブセット（語尾パターン上位5件・頻出表現上位10件）を再集計する
+- 全体StyleStatsの完全な再計算は行わない
+
+**LLMへのコンテキスト**（ローカル分析結果）:
+- クラスタ固有の統計サブセット
+- 語尾パターン上位5件と実例
+- 頻出表現上位10件
+
+**LLMに要求する出力**（意味理解が必要なもののみ）:
+1. portrait: このモードでの人物像（500-1500字）
+2. representativeTweets: 代表ツイート最大10件（選定理由付き）
+3. attitudePatterns: 態度パターン3-5件（名前・説明・実例ツイートID）
+
+設計根拠: [design-rationale.md §Step 3](./design-rationale.md) を参照
+
+### 4.4 REQ-SYN: ペルソナ文書合成
+
+**責務**: StyleStats + ClusterAnalysis[] を合成し、1つの PersonaDocument を生成する
+**入力**: ClusterAnalysis[], StyleStats, CorpusMetadata
+**出力**: PersonaDocument
+**LLM**: Opus
+**temperature**: 0.2
+
+**合成で行うべきこと**:
+1. ペルソナ本文 (body) の生成: 6セクション構成の自然言語文書（3000-6000字）
+2. ボイスバンクの選定: 各クラスタの代表ツイートから20-30件、カテゴリ多様性を確保
+3. 態度パターンの統合: クラスタ間で重複するパターンを統合し、各パターンに由来モード情報（sourceCategories）を付与
+4. 矛盾の検出と記録: モード依存の振る舞いは矛盾として解消せず保持。本質的矛盾のみ解消
+
+**ペルソナ本文のクオリティ基準**:
+- LLMがシステムプロンプトとして直接使用可能な自然言語であること
+- 抽象記述には必ず具体例を併記すること
+- 「〜のように書く」「〜とは書かない」の形式で文体ルールを明示すること
+- 文体ルールセクションでは StyleStats の確定的データを人間可読な記述に変換して埋め込むこと
+
+**Opusを使用する根拠**: 複数モードの統合に高度な判断が必要。実行は1回のみでコストインパクト最小。ペルソナ文書の品質が後続全工程の品質上限を決定する。
+
+設計根拠: [design-rationale.md §Step 4](./design-rationale.md) を参照
+
+### 4.5 REQ-EMB: Embedding生成
+
+**責務**: ツイートのベクトル化とインデックス構築
+**入力**: TweetCorpus（前処理済み）
+**出力**: EmbeddingIndex
+**モデル**: multilingual-e5-small（Transformers.js経由、ローカル実行）
+**外部API**: 不使用
+
+**要件**:
+- Transformers.js + ONNX Runtime で multilingual-e5-small を実行する
+- Node.js（CLI）とブラウザ（Web）の両環境で同一モデルを使用する
+- ONNX INT8量子化モデル（約118MB）を使用し、初回ダウンロード後はキャッシュする
+- 永続化: JSONファイル（CLI）/ IndexedDB（Web）に保存。再実行時はスキップ
+- サイズ見積: 384次元 × 8,000件 × 4bytes ≒ **約12MB**（Float32Array）。JSON形式では約18-25MB
+
+設計根拠: [design-rationale.md §Step 5](./design-rationale.md) を参照
+
+---
+
+## 5. 機能要件: ジェネレートフェーズ
+
+### 5.1 REQ-RET: 類似検索
+
+**責務**: トピックに関連し、かつ態度の多様性を確保したツイートの検索
+**入力**: トピック文字列, EmbeddingIndex, TaggedTweet[]
+**出力**: TaggedTweet[] （生成用 topK 件 + 評価用 topK 件 = 2*topK 件）
+**LLM**: multilingual-e5-small（ローカル、クエリEmbeddingのみ）
+
+**検索アルゴリズム**:
+1. Phase 1（意味的類似検索）: Cosine similarity で上位 topK * 6 件の候補を取得
+2. Phase 2（多様性フィルタリング）: sentiment/category の多様性を確保しつつ 2*topK 件を選定
+3. 選定結果を前半（生成用）と後半（評価用）に分割して返す
+
+**設定パラメータ**:
+- topK: デフォルト 5
+- sentimentDiversity: デフォルト true
+- categoryDiversity: デフォルト true
+
+**候補不足時**: topK * 6 件に満たない場合、取得可能な全件から多様性フィルタリングを行う。2*topK 件に満たない場合、取得件数を半分に分割する。
+
+設計根拠: [design-rationale.md §Step 6](./design-rationale.md) を参照
+
+### 5.2 REQ-GEN: テキスト生成
+
+**責務**: PersonaDocumentに基づく新規テキスト生成
+**入力**: PersonaDocument, TaggedTweet[]（生成用few-shot）, トピック文字列
+**出力**: GeneratedText（単数）または GeneratedText[]（複数バリアント時）
+**LLM**: Sonnet + Prompt Caching（apiバックエンド時）
+**temperature**: 0.7（0.3〜1.0で調整可能）
+
+**プロンプト構成の概要**:
+- System Prompt: PersonaDocument.body + ボイスバンクから5-10件 + 生成ルール → Prompt Caching対象
+- User Message: トピック/指示 + few-shotツイート（Step 6の生成用結果）
+- プロンプト構成の詳細は design-spec.md §4.7 を参照
+
+**生成パラメータ**:
+- topic: 生成トピック（必須）
+- temperature: デフォルト 0.7
+- maxLength: デフォルト 280（ツイート相当）
+- numVariants: デフォルト 1
+- styleHint: 追加スタイル指示（null可）
+
+**numVariants > 1 の場合のフロー**:
+1. numVariants 回、独立にテキスト生成を実行（各回で同一のfew-shotを使用）
+2. 全バリアントに対してStep 8の評価を個別に実行
+3. 全バリアントを GeneratedText[] として返却（呼び出し側でスコアによる選別が可能）
+
+設計根拠: [design-rationale.md §Step 7](./design-rationale.md) を参照
+
+### 5.3 REQ-EVAL: 品質評価
+
+**責務**: 生成テキストが「その人が書いたように読めるか」を元ツイートとの直接比較で評価する
+**入力**: GeneratedText, TaggedTweet[]（評価用の元ツイート5-10件）, PersonaDocument
+**出力**: EvaluationResult
+**LLM**: Sonnet
+**temperature**: 0.0
+
+**評価手法**:
+- 元ツイートと生成テキストを並べて「同一人物が書いたように読めるか」を直接判定
+- PersonaDocumentを介した間接評価は行わない（循環性の問題を回避）
+- 評価プロンプトの詳細は design-spec.md §4.8 を参照
+
+**評価用ツイートの選定**:
+- Step 6で生成用とは異なるセットを使用（生成用few-shotとの循環回避）
+- ボイスバンクからも5件を評価コンテキストに含める
+
+**合格判定**: authenticity >= 6.0（設定で変更可能）
+
+**evaluationフィールドのライフサイクル**:
+- GeneratedText 生成直後は `evaluation: null`
+- Step 8 完了後に `evaluation` フィールドが付与される
+- 一度付与された evaluation は不変
+
+設計根拠: [design-rationale.md §Step 8](./design-rationale.md) を参照
+
+---
+
+## 6. LLMバックエンド要件
+
+### 6.1 バックエンド概要
+
+LLMプロバイダへのアクセス方法として2つのバックエンドを提供する。
+
+| バックエンド | 識別名 | 概要 |
+|-------------|--------|------|
+| API直接呼び出し | `api` | Anthropic Messages APIにHTTPリクエスト。APIキーが必要 |
+| Claude Code CLI | `claude-code` | `claude -p`（printモード）をサブプロセスで起動。Claude Codeの認証を利用 |
+
+**モデル指定**: ティア（haiku / sonnet / opus）で指定し、具体的なモデルIDへの解決は設定管理層が行う。
+
+**バックエンド選択の指針**:
+- 手軽に試したい / APIキー不要 → `claude-code`
+- コスト最適化 / 大量処理 → `api`（Batch API・Prompt Caching対応）
+- Web版 → `api` 一択
+
+### 6.2 機能対応表
+
+| 機能 | `api` | `claude-code` |
+|------|-------|---------------|
+| Anthropic Claude (Haiku/Sonnet/Opus) | ✓ | ✓ |
+| ローカルEmbedding (Transformers.js) | ✓ | ✓ |
+| Batch API (50%割引) | ✓ | ✗ |
+| Prompt Caching (明示的制御) | ✓ | ✗（内部自動管理） |
+| トークン使用量の取得 | ✓ | ✓ |
+| コスト見積の精密計算 | ✓ | △（推計） |
+| temperature制御 | ✓ | ✗ |
+| system prompt指定 | ✓ | ✓ |
+| モデル選択 | ✓ | ✓ |
+| APIキー不要での利用 | ✗ | ✓ |
+| Web版での利用 | ✓ | ✗ |
+| コスト上限制御 | ✓ | ✓ |
+
+### 6.3 Embedding要件・CORS制約
+
+**Embedding生成**:
+- Transformers.js + multilingual-e5-small によるローカル実行。外部APIへの依存なし
+- CLI（Node.js）とWeb（ブラウザ）の両環境で同一モデルを使用
+- ONNX INT8量子化モデル（約118MB）は初回実行時にダウンロードされ、以降はキャッシュされる
+
+**Web版のCORS制約**:
+- Anthropic Messages API: ブラウザからの直接呼び出しには `anthropic-dangerous-direct-browser-access: true` ヘッダの付与が必須。APIキーがブラウザの開発者ツールから閲覧可能になるリスクがあり、初回利用時にその旨をユーザーに通知すること
+- Embedding生成はローカル実行のためCORS制約を受けない。Web版でもStep 5を含むフルパイプラインを実行可能
+
+### 6.4 Claude Code CLI制約
+
+- `claude -p` + `--max-turns 1` で単一ターンの応答を得る
+- `--model` でモデル指定、`--system-prompt` でシステムプロンプト指定、`--output-format json` でJSON出力
+- Batch API・Prompt Caching の明示的制御は不可
+- temperature の明示的制御は不可（ログに info で通知し無視）
+- タイムアウト: 180秒（API バックエンドより長い、初期化オーバーヘッド考慮）
+- `claude` コマンドが PATH 上に存在すること。未検出時はインストール案内エラーを返す
+- Node.js CLI でのみ使用可能。Web版では利用不可
+
+---
+
+## 7. インターフェース要件
+
+### 7.1 CLIインターフェース
+
+**一括実行コマンド**:
+```
+groa build <tweets.json>                         # Step 0-5: プロファイル構築
+groa build <tweets.json> --backend claude-code    # バックエンド一時指定
+groa generate <topic> [--n 5] [--temp 0.7]       # Step 6-8: 生成
+```
+
+**個別実行コマンド**:
+```
+groa step preprocess <tweets.json>
+groa step stats / classify / analyze / synthesize / embed
+```
+
+**ユーティリティコマンド**:
+```
+groa init          # 設定ファイル生成
+groa inspect       # PersonaDocument表示
+groa cost          # 累計コスト表示
+groa clean [--step <name>]  # キャッシュ削除
+groa config        # 現在の設定表示
+```
+
+**進捗表示**:
+```
+Backend: api
+[Step 0] Preprocessing... 10000 → 7823 tweets (2177 filtered)
+[Step 1] Analyzing style... 7823 tweets [$0]
+[Step 2] Classifying... 157/157 batches [$0.17]
+[Step 3] Analyzing clusters... 5 clusters [$1.50]
+[Step 4] Synthesizing persona... [$0.50]
+[Step 5] Building embedding index... [$0]
+✓ Profile built. Total cost: $2.17
+```
+
+**中断と復帰**: 各ステップ完了時にキャッシュを書き出し。再実行時、有効なキャッシュはスキップ。`--force` で無視して再実行。
+
+### 7.2 Webインターフェース
+
+**機能スコープ**:
+
+| 機能 | CLI | Web |
+|------|-----|-----|
+| プロファイル構築 (build) | ✓ | ✓（全ステップ実行可） |
+| Embedding生成 (Step 5) | ✓ | ✓（ローカル実行） |
+| テキスト生成 | ✓ | ✓ |
+| プロファイル閲覧 | テキスト表示 | ビジュアライズ |
+| 設定編集 | JSON直接編集 | フォームUI |
+
+**制約**:
+- `api` バックエンドのみ対応（`claude-code` は不可）
+- kuromoji.js の形態素解析はメインスレッドをブロックするため、Web Worker での実行を必須とする
+- Transformers.jsのモデルファイル（約118MB）は初回実行時にダウンロードされる。進捗表示を提供すること
+- ブラウザ互換性: ES2022+（Chrome 94+, Firefox 93+, Safari 15.4+, Edge 94+）
+
+**データ保持**:
+- APIキー: メモリのみ（リロードで消失）
+- 設定・中間結果・キャッシュ: IndexedDB
+- PersonaDocument: IndexedDB + エクスポート機能（JSONダウンロード）
+- EmbeddingIndex: IndexedDB。容量超過時（QuotaExceededError）はユーザーに通知
+
+### 7.3 入力フォーマット
+
+```json
+[
+  {
+    "id": "1234567890",
+    "text": "ツイート本文",
+    "timestamp": 1700000000000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  }
+]
+```
+
+Twitter/X公式エクスポートからの変換スクリプトはスコープ外。フィールドマッピングをREADMEに記載する。
+
+### 7.4 入力データサイズの対応範囲
+
+| 範囲 | ツイート件数 | 備考 |
+|------|------------|------|
+| 最小 | 100件 | これ未満は統計分析の精度が不十分。警告を表示し続行 |
+| 推奨 | 3,000 - 10,000件 | パイプライン全体で最適な品質とコストのバランス |
+| 上限 | 50,000件 | メモリ・EmbeddingIndexサイズの制約。超過時はエラー |
+
+10件未満の場合はエラーとして中断する。
+
+---
+
+## 8. 設定管理要件
+
+### 8.1 設定項目一覧
+
+設定は `groa.json` で管理する。Zodスキーマでバリデーション。完全なJSONスキーマは design-spec.md §6 を参照。
+
+**主要設定項目**:
+
+| 項目 | デフォルト | 説明 |
+|------|-----------|------|
+| backend | "api" | LLMバックエンド（"api" \| "claude-code"） |
+| apiKeys.anthropic | 環境変数 | Anthropic APIキー |
+| models.haiku / sonnet / opus | 各モデルの最新ID | モデルID指定 |
+| steps.preprocess.minTweetLength | 5 | 最小ツイート文字数 |
+| steps.preprocess.boilerplatePatterns | [] | 定型パターン（正規表現） |
+| steps.classify.batchSize | 50 | 1リクエストあたりのツイート数 |
+| steps.analyze.minClusterSize | 50 | クラスタ最小件数 |
+| steps.analyze.maxClusterSize | 3000 | クラスタ最大件数 |
+| steps.retrieve.topK | 5 | 検索件数 |
+| steps.retrieve.sentimentDiversity | true | 感情多様性フィルタ |
+| steps.retrieve.categoryDiversity | true | カテゴリ多様性フィルタ |
+| steps.generate.defaultTemperature | 0.7 | 生成時のtemperature |
+| steps.generate.maxLength | 280 | 最大文字数 |
+| steps.generate.numVariants | 1 | 生成バリアント数 |
+| steps.evaluate.threshold | 6.0 | authenticity合格しきい値 |
+| cacheDir | ".groa" | キャッシュディレクトリ |
+| costLimitUsd | 10.0 | コスト上限（USD） |
+
+steps.stats はパラメータなし（全値がハードコード: 上位件数等は型定義に規定済み）。
+
+**各ステップ共通の工程別オーバーライド**: model, apiKey を steps.{stepName} 内で個別指定可能。
+
+### 8.2 設定解決の優先順位
+
+**`api` バックエンド**:
+1. steps.{stepName} の工程別指定（最優先）
+2. グローバル設定（apiKeys.{provider} / models.{tier}）
+3. 環境変数（ANTHROPIC_API_KEY）
+
+**`claude-code` バックエンド**:
+1. steps.{stepName}.model
+2. models.{tier}
+3. Claude Codeのデフォルトモデル
+- APIキーは不要（Claude Code自身の認証）
+
+設定ファイルが存在しない場合はデフォルト値 + 環境変数で動作する。
+
+---
+
+## 9. 非機能要件
+
+### 9.1 エラーハンドリング方針
+
+**基本方針**:
+- 各ステップはエラーを throw で上位に伝播。catch は pipeline パッケージでのみ
+- レート制限は llm-client 内で自動リトライ後、最大回数超過時にのみ throw
+- 全エラーにユーザーが次にとるべきアクションを含める
+
+**LLMレスポンスパース失敗時の統一リカバリ方針**:
+1. JSONパース失敗 → 最大2回リトライ（同一プロンプトで再送信）
+2. Zodバリデーション失敗 → ステップ固有のフォールバック:
+   - classify: `category: "other"`, `sentiment: "neutral"`
+   - analyze: 当該クラスタをスキップし、ログに警告
+   - synthesize / generate / evaluate: リトライ（最大2回）、全失敗時はエラー停止
+3. 全リトライ失敗 → エラーを throw しパイプラインを停止
+
+**エッジケースの挙動**:
+- 入力ツイート 0件 → VALIDATION_ERROR で即座に停止
+- 前処理後 0件 → 警告を表示し、フィルタ条件の緩和を案内して停止
+- 全カテゴリが50件未満 → 全て "other" に統合し、1クラスタで分析を続行
+- Embeddingの候補が topK * 6 件に満たない → 取得可能な全件で処理
+
+### 9.2 パフォーマンス要件
+
+**処理時間目標（10,000件入力、apiバックエンド）**:
+
+| ステップ | 目標時間 |
+|---------|---------|
+| Step 0: 前処理 | 5秒以内 |
+| Step 1: 統計分析 | 30秒以内（Node.js） |
+| Step 2: 分類（Batch API） | 30分以内（Batch応答待ち含む） |
+| Step 3: クラスタ分析 | 10分以内 |
+| Step 4: ペルソナ合成 | 5分以内 |
+| Step 5: Embedding生成 | 2分以内 |
+| ビルドフェーズ合計 | 約50分以内 |
+| Step 6-8 (1件生成+評価) | 30秒以内 |
+
+**Batch API応答待機**:
+- ポーリング間隔: 30秒
+- 最大待機時間: 60分
+- 60分超過時はタイムアウトエラー
+
+### 9.3 セキュリティ・プライバシー
+
+- APIキーを中間結果のJSONファイルに書き出さない
+- groa.json に直接APIキーを記述した場合、ファイルパーミッション警告を出す（CLIのみ、Unix環境で0600以外）
+- ログ出力時、APIキーやAuthorizationヘッダの値をマスクする
+- ツイートデータは外部LLM APIに送信される。初回実行時にその旨を通知する（CLI: インタラクティブ確認、Web: 同意ダイアログ）
+- .groa/ ディレクトリの取り扱いについてREADMEで注意喚起
+- Web版ではデータはブラウザのIndexedDBに留まり、groa自身がサーバーにデータを送信することはない（LLM API以外）
+
+### 9.4 倫理的ガイドライン
+
+- 本ツールは入力データの提供者本人による利用を想定している
+- 第三者のツイートデータを無断でプロファイリングに使用することは推奨しない
+- 生成テキストが実在の人物の発言として誤認されることを防ぐため、生成テキストにはその旨の注記を付与することを推奨する
+- 利用規約において、生成テキストの悪用（なりすまし、フェイクニュース等）に関する免責事項を記載すること
+- READMEにプライバシーと倫理に関する注意事項を記載すること
+
+### 9.5 コスト要件
+
+**コスト見積（apiバックエンド、10,000件入力）**:
+
+| 工程 | モデル | 見積コスト |
+|------|--------|-----------|
+| Step 0-1 | なし | $0 |
+| Step 2 | Haiku (Batch) | ~$0.17 |
+| Step 3 | Sonnet | ~$1.50 |
+| Step 4 | Opus | ~$0.50 |
+| Step 5 | multilingual-e5-small（ローカル） | $0 |
+| **プロファイル構築合計** | | **~$2.17** |
+| Step 7 (1件) | Sonnet (Cache) | ~$0.009 |
+| Step 8 (1件) | Sonnet | ~$0.01 |
+| **100件生成+評価** | | **~$1.90** |
+
+**claude-code バックエンド時**:
+- プロファイル構築: ~$2.33（Batch API不可のため約7%増）
+- 100件生成+評価: ~$3.05（Prompt Caching効果が不確実）
+
+**コスト上限ガード**:
+- costLimitUsd（デフォルト $10.0）超過時、実行を中断しユーザーに確認
+- `--no-cost-limit` フラグで無制限実行も可能
+
+---
+
+## 10. 品質基準
+
+### 10.1 テスト要件
+
+テストフレームワーク: Vitest
+
+**テスト方針の概要**:
+- ローカル処理パッケージ（preprocess, stats, retrieve）: ユニットテスト
+- LLM利用パッケージ（classify, analyze, synthesize, generate, evaluate）: LLMレスポンスのモック + スナップショットテスト
+- llm-client: fetch / execFileのモックテスト
+- pipeline: モックLlmBackendでの結合テスト
+- 実際のLLM呼び出しを含むテストは `vitest --project integration` で明示実行
+- テスト用の固定ツイートデータセット（100件、合成データ）をリポジトリに含める
+
+パッケージ別の詳細なテスト方針は design-spec.md §9 を参照。
+
+### 10.2 リリース基準（v0.1.0）
+
+1. `vitest` が全パッケージで成功すること
+2. `api` バックエンドで10,000件のツイートデータに対し、全ステップがエラーなく完了し PersonaDocument が生成されること（CLI）
+3. `claude-code` バックエンドで同上（CLI）
+4. Web版（apiバックエンドのみ）で、Step 0-5の実行 + 生成 + 評価の一連のフローが動作すること
+5. 生成テキスト30件（temperature: 0.0）の authenticity スコアの平均が 6.0 以上であること
+6. api バックエンドでのビルドフェーズ全コスト合計が見積の2倍（$4.34）を超えないこと
+7. READMEに以下が記載されていること: 導入手順（両バックエンド）、使用方法、コスト見積（バックエンド別）、ツイートデータのフィールドマッピング、プライバシーと倫理に関する注意事項
+
+---
+
+## 付録A. 用語集
+
+### データ型
+
+| 用語 | 定義 |
+|------|------|
+| Tweet | 入力となる1件のツイートデータ |
+| TweetCorpus | 前処理済みのツイート群とメタ情報 |
+| StyleStats | kuromoji.jsによるローカル統計分析結果。LLM不使用で算出される確定的データ |
+| TaggedTweet | カテゴリとセンチメントが付与されたツイート |
+| TopicCluster | カテゴリ別にグルーピングされたツイート群 |
+| ClusterAnalysis | 各トピッククラスタから抽出されたモード固有の人格特徴 |
+| AttitudePattern | 人物が特定のモードで取る典型的な態度パターン |
+| PersonaDocument | groaの最終成果物。LLMのシステムプロンプトとして使用可能な自然言語文書 |
+| VoiceBankEntry | ペルソナを代表するツイートとその選定理由 |
+| GeneratedText | パイプラインが生成したテキストとそのメタ情報 |
+| EvaluationResult | 生成テキストの品質評価スコアと根拠 |
+| EmbeddingIndex | 全ツイートのベクトル表現とインデックス |
+| TweetEmbedding | 1件のツイートのEmbeddingベクトルとメタ情報 |
+| CorpusMetadata | コーパスの統計情報（総件数、日付範囲、フィルタ除外数） |
+| Category | ツイートの話題分類（tech, daily, opinion, emotion, creative, other） |
+| Sentiment | ツイートの感情ラベル（positive, negative, neutral, mixed） |
+
+### パイプライン用語
+
+| 用語 | 定義 |
+|------|------|
+| ビルドフェーズ | Step 0-5。プロファイル構築の工程 |
+| ジェネレートフェーズ | Step 6-8。テキスト生成と評価の工程 |
+| モード | 話題領域（tech, daily, opinion等）に応じた人物の振る舞いパターン |
+| ポートレート (portrait) | 特定モードにおける人物像の自然言語記述 |
+| ボイスバンク (voice bank) | 人物らしさが凝縮された代表ツイート群 |
+
+### LLMバックエンド
+
+| 用語 | 定義 |
+|------|------|
+| api バックエンド | Anthropic APIにHTTP直接呼び出しするバックエンド |
+| claude-code バックエンド | Claude Code CLI経由でLLMにアクセスするバックエンド |
+| Batch API | Anthropicの非同期バッチ処理API。50%割引 |
+| Prompt Caching | 同一プレフィックスの再利用で入力コストを90%削減する機能 |
+| ModelTier | モデルの抽象的な性能区分（haiku / sonnet / opus） |
+
+### 品質指標
+
+| 用語 | 定義 |
+|------|------|
+| authenticity | 同一人物が書いたように読めるかの総合スコア (0-10) |
+| styleNaturalness | 文体の自然さ、わざとらしくなさ (0-10) |
+| attitudeConsistency | トピックに対する態度の妥当性 (0-10) |
+
+---
+
+## 付録B. 変更履歴
+
+| 日付 | 版 | 主な変更内容 |
+|------|-----|-------------|
+| (初稿) | 0.1.0-draft | 初期要件定義 |
+| 2026-03-22 | 0.1.0-draft-r5.1 | ハイブリッドパイプライン、設計根拠の追加 |
+| 2026-03-22 | 0.1.0-draft-r6 | 要件書ブラッシュアップ: What/How分離（設計仕様をdesign-spec.mdに分離）、レビュー指摘37件への対応（Critical 3件・Major 13件・品質改善11件・Minor 10件）、セクション再構成、データモデル表形式化、プロダクト概要・ユースケース・データフロー図・非機能要件・倫理ガイドライン・用語集の追加 |
