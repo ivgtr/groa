@@ -1,0 +1,49 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "composite": true
+  },
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../types"
+    },
+    {
+      "path": "../config"
+    },
+    {
+      "path": "../llm-client"
+    },
+    {
+      "path": "../preprocess"
+    },
+    {
+      "path": "../stats"
+    },
+    {
+      "path": "../classify"
+    },
+    {
+      "path": "../analyze"
+    },
+    {
+      "path": "../synthesize"
+    },
+    {
+      "path": "../embed"
+    },
+    {
+      "path": "../retrieve"
+    },
+    {
+      "path": "../generate"
+    },
+    {
+      "path": "../evaluate"
+    }
+  ]
+}

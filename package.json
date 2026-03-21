@@ -7,5 +7,20 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "packageManager": "pnpm@9.15.4"
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "build": "tsc --build packages/*/tsconfig.json",
+    "test": "vitest run",
+    "lint": "eslint packages/*/src/"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "eslint-import-resolver-typescript": "^3.7.0",
+    "eslint-plugin-import-x": "^4.6.0",
+    "happy-dom": "^20.8.4",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.18.0",
+    "vitest": "^3.0.0"
+  }
 }

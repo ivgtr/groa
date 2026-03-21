@@ -1,0 +1,31 @@
+{
+  "name": "@groa/pipeline",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "lint": "eslint src/",
+    "test": "vitest run --project pipeline"
+  },
+  "dependencies": {
+    "@groa/types": "workspace:*",
+    "@groa/config": "workspace:*",
+    "@groa/llm-client": "workspace:*",
+    "@groa/preprocess": "workspace:*",
+    "@groa/stats": "workspace:*",
+    "@groa/classify": "workspace:*",
+    "@groa/analyze": "workspace:*",
+    "@groa/synthesize": "workspace:*",
+    "@groa/embed": "workspace:*",
+    "@groa/retrieve": "workspace:*",
+    "@groa/generate": "workspace:*",
+    "@groa/evaluate": "workspace:*"
+  }
+}
