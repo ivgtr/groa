@@ -15,15 +15,15 @@
 
 | ID | タスク名 | 優先度 | サイズ | ステータス | 依存 |
 |----|---------|--------|--------|-----------|------|
-| [T1.1.1](items/T1.1.1.md) | pnpm workspace・ビルド・テスト・lint基盤セットアップ | Must | M | Todo | - |
-| [T1.2.1](items/T1.2.1.md) | Branded Types・入力データ型のZodスキーマ | Must | M | Todo | T1.1.1 |
-| [T1.2.2](items/T1.2.2.md) | 中間データ型のZodスキーマ | Must | M | Todo | T1.2.1 |
-| [T1.2.3](items/T1.2.3.md) | 出力・Embeddingデータ型のZodスキーマ | Must | M | Todo | T1.2.2 |
-| [T2.1.1](items/T2.1.1.md) | groa.json Zodスキーマ・デフォルト値・バリデーション | Must | M | Todo | T1.1.1 |
-| [T2.1.2](items/T2.1.2.md) | 設定解決ロジック | Must | M | Todo | T2.1.1 |
-| [T3.1.1](items/T3.1.1.md) | LlmBackendインターフェース・リトライ・レート制限 | Must | M | Todo | T2.1.2, T1.2.1 |
-| [T3.1.2](items/T3.1.2.md) | トークン使用量追跡・コスト計算 | Must | M | Todo | T3.1.1 |
-| [T3.2.1](items/T3.2.1.md) | Anthropic Messages API クライアント | Must | M | Todo | T3.1.1 |
+| [T1.1.1](items/T1.1.1.md) | pnpm workspace・ビルド・テスト・lint基盤セットアップ | Must | M | Done | - |
+| [T1.2.1](items/T1.2.1.md) | Branded Types・入力データ型のZodスキーマ | Must | M | Done | T1.1.1 |
+| [T1.2.2](items/T1.2.2.md) | 中間データ型のZodスキーマ | Must | M | Done | T1.2.1 |
+| [T1.2.3](items/T1.2.3.md) | 出力・Embeddingデータ型のZodスキーマ | Must | M | Done | T1.2.2 |
+| [T2.1.1](items/T2.1.1.md) | groa.json Zodスキーマ・デフォルト値・バリデーション | Must | M | Done | T1.1.1 |
+| [T2.1.2](items/T2.1.2.md) | 設定解決ロジック | Must | M | Done | T2.1.1 |
+| [T3.1.1](items/T3.1.1.md) | LlmBackendインターフェース・リトライ・レート制限 | Must | M | Done | T2.1.2, T1.2.1 |
+| [T3.1.2](items/T3.1.2.md) | トークン使用量追跡・コスト計算 | Must | M | Done | T3.1.1 |
+| [T3.2.1](items/T3.2.1.md) | Anthropic Messages API クライアント | Must | M | Done | T3.1.1 |
 | [T3.2.2](items/T3.2.2.md) | Batch API 対応 | Should | M | Todo | T3.2.1 |
 | [T3.2.3](items/T3.2.3.md) | Prompt Caching 対応 | Should | S | Todo | T3.2.1 |
 | [T3.3.1](items/T3.3.1.md) | Claude Code CLI バックエンド実装 | Must | M | Todo | T3.1.1 |
@@ -65,6 +65,6 @@
 | [T16.2.2](items/T16.2.2.md) | セキュリティ対応 | Must | M | Todo | T3.1.1, T2.1.2 |
 
 ## 進捗サマリ
-- Must: 0/39 完了
+- Must: 9/39 完了
 - Should: 0/8 完了
 - Could: 0/1 完了
