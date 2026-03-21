@@ -10,10 +10,17 @@
 # 事前にチェックポイントを作成
 git add -A && git commit -m "checkpoint: before auto-execute"
 
-# ヘッドレス + YOLO + ターン数制限で実行
+# 基本: ヘッドレス + YOLO + ターン数制限
 claude -p "$(cat .docs/prompts/execute-tasks.md)" \
   --dangerously-skip-permissions \
   --max-turns 200
+
+# リアルタイムでログを確認しながら実行（推奨）
+claude -p "$(cat .docs/prompts/execute-tasks.md)" \
+  --dangerously-skip-permissions \
+  --max-turns 200 \
+  --output-format stream-json \
+  | tee .docs/tasks/execution-log.jsonl
 ```
 
 **フラグの説明:**
@@ -22,6 +29,27 @@ claude -p "$(cat .docs/prompts/execute-tasks.md)" \
 | `-p` | ヘッドレス（非対話）モード。プロンプトを渡して完了まで実行する |
 | `--dangerously-skip-permissions` | 全権限チェックをバイパス（YOLO モード） |
 | `--max-turns N` | エージェントのターン数上限。タスク数 × 約20 を目安に設定する |
+| `--output-format stream-json` | ターンごとにJSON Lines形式でリアルタイム出力する |
+
+**出力フォーマットの選択:**
+| フォーマット | 出力内容 | 用途 |
+|------------|---------|------|
+| `text`（デフォルト） | 最終結果のテキストのみ | 結果だけ見ればいい場合 |
+| `stream-json` | ターンごとのNDJSON | リアルタイム監視・ログ保存 |
+| `json` | 完了後に構造化JSON | CI/CD連携・後処理 |
+
+**別ターミナルからリアルタイム監視する場合:**
+```bash
+# ターミナル1: 実行（バックグラウンド）
+claude -p "$(cat .docs/prompts/execute-tasks.md)" \
+  --dangerously-skip-permissions \
+  --max-turns 200 \
+  --output-format stream-json \
+  > .docs/tasks/execution-log.jsonl 2>&1 &
+
+# ターミナル2: ログを追跡
+tail -f .docs/tasks/execution-log.jsonl | jq -r 'select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text'
+```
 
 **注意:**
 - 必ず git commit してから実行すること（`git reset --hard HEAD` で全復元可能にする）
