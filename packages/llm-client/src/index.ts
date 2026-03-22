@@ -18,7 +18,9 @@ export {
 export type { RetryConfig } from "./retry.js";
 
 export { createLlmBackend } from "./factory.js";
-export { ApiBackend, maskApiKey } from "./api-backend.js";
+export { ApiError } from "./errors.js";
+export { AnthropicBackend, maskApiKey } from "./anthropic-backend.js";
+export { OpenRouterBackend } from "./openrouter-backend.js";
 export {
   ClaudeCodeBackend,
   checkClaudeCodeAvailable,

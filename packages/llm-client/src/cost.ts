@@ -26,7 +26,10 @@ interface TokenPricing {
   batchOutputPerMillion: number;
 }
 
+// 参考値。実際の価格はプロバイダの公式ページを確認すること。
+// 未知のモデルIDは DEFAULT_PRICING（Sonnet相当）にフォールバックする。
 const PRICING_TABLE: Record<string, TokenPricing> = {
+  // Anthropic (direct API)
   "claude-haiku-4-5-20251001": {
     inputPerMillion: 0.80,
     outputPerMillion: 4.00,
@@ -50,6 +53,15 @@ const PRICING_TABLE: Record<string, TokenPricing> = {
     cacheReadPerMillion: 1.50,
     batchInputPerMillion: 7.50,
     batchOutputPerMillion: 37.50,
+  },
+  // Google (via OpenRouter)
+  "google/gemini-2.5-flash-lite": {
+    inputPerMillion: 0.10,
+    outputPerMillion: 0.40,
+    cacheWritePerMillion: 0,
+    cacheReadPerMillion: 0.025,
+    batchInputPerMillion: 0.10,
+    batchOutputPerMillion: 0.40,
   },
 };
 

@@ -1,7 +1,8 @@
 import type { ResolvedStepConfig } from "@groa/config";
 import type { LlmBackend } from "./types.js";
-import { ApiBackend } from "./api-backend.js";
+import { AnthropicBackend } from "./anthropic-backend.js";
 import { ClaudeCodeBackend } from "./claude-code-backend.js";
+import { OpenRouterBackend } from "./openrouter-backend.js";
 
 /**
  * バックエンド種別に応じた LlmBackend を生成する
@@ -11,8 +12,10 @@ export function createLlmBackend(
   options: { isBrowser?: boolean } = {},
 ): LlmBackend {
   switch (config.backend) {
-    case "api":
-      return new ApiBackend(config, options.isBrowser);
+    case "anthropic":
+      return new AnthropicBackend(config, options.isBrowser);
+    case "openrouter":
+      return new OpenRouterBackend(config);
     case "claude-code":
       return new ClaudeCodeBackend(config);
     default: {
