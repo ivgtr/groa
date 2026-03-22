@@ -16,7 +16,7 @@ export function createProgram(): Command {
       "ツイートデータから人格プロファイルを抽出し「らしい」テキストを生成するツール",
     )
     .version("0.1.0")
-    .option("--backend <type>", "バックエンド種別 (api | claude-code)")
+    .option("--backend <type>", "バックエンド種別 (anthropic | openrouter | claude-code)")
     .option("--force", "キャッシュを無視して再実行する")
     .option("--no-cost-limit", "コスト上限を無効にする");
 

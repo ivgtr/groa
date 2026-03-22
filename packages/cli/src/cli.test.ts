@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createProgram } from "./index.js";
 import { runInit } from "./commands/init.js";
-import { loadConfig } from "./commands/config.js";
+import { loadConfig, runConfigSet } from "./commands/config.js";
 import { runInspect } from "./commands/inspect.js";
 import { runCost, collectCostSummary } from "./commands/cost.js";
 import { runClean } from "./commands/clean.js";
@@ -85,17 +85,17 @@ describe("createProgram", () => {
 
 describe("groa init", () => {
   it("groa.json の雛形を生成する", async () => {
-    const filePath = await runInit("api", testDir);
+    const filePath = await runInit("anthropic", testDir);
 
     const content = await readFile(filePath, "utf-8");
     const config = JSON.parse(content) as Record<string, unknown>;
-    expect(config.backend).toBe("api");
+    expect(config.backend).toBe("anthropic");
     expect(config.cacheDir).toBe(".groa");
     expect(config.costLimitUsd).toBe(10.0);
   });
 
-  it("api バックエンドで APIキー環境変数プレースホルダを設定する", async () => {
-    await runInit("api", testDir);
+  it("anthropic バックエンドで APIキー環境変数プレースホルダを設定する", async () => {
+    await runInit("anthropic", testDir);
     const content = await readFile(
       join(testDir, "groa.json"),
       "utf-8",
@@ -116,17 +116,45 @@ describe("groa init", () => {
   });
 
   it("既に groa.json が存在する場合はエラーを投げる", async () => {
-    await runInit("api", testDir);
-    await expect(runInit("api", testDir)).rejects.toThrow("既に存在します");
+    await runInit("anthropic", testDir);
+    await expect(runInit("anthropic", testDir)).rejects.toThrow("既に存在します");
+  });
+
+  it("--models.* オプションでモデルIDを指定できる", async () => {
+    await runInit("anthropic", testDir, {
+      haiku: "claude-haiku-4-5-20251001",
+      sonnet: "claude-sonnet-4-6-20250227",
+    });
+    const content = await readFile(
+      join(testDir, "groa.json"),
+      "utf-8",
+    );
+    const config = JSON.parse(content) as Record<string, unknown>;
+    const models = config.models as Record<string, string | null>;
+    expect(models.haiku).toBe("claude-haiku-4-5-20251001");
+    expect(models.sonnet).toBe("claude-sonnet-4-6-20250227");
+    expect(models.opus).toBeNull();
+  });
+
+  it("openrouter バックエンドで APIキー環境変数プレースホルダを設定する", async () => {
+    await runInit("openrouter", testDir);
+    const content = await readFile(
+      join(testDir, "groa.json"),
+      "utf-8",
+    );
+    const config = JSON.parse(content) as Record<string, unknown>;
+    const apiKeys = config.apiKeys as Record<string, string>;
+    expect(apiKeys.openrouter).toBe("${OPENROUTER_API_KEY}");
+    expect(config.backend).toBe("openrouter");
   });
 });
 
 describe("groa config", () => {
   it("groa.json から設定を読み込む", async () => {
-    await runInit("api", testDir);
+    await runInit("anthropic", testDir);
     const config = await loadConfig(testDir);
 
-    expect(config.backend).toBe("api");
+    expect(config.backend).toBe("anthropic");
     expect(config.costLimitUsd).toBe(10.0);
   });
 
@@ -140,6 +168,45 @@ describe("groa config", () => {
     await writeFile(join(testDir, "groa.json"), "{ invalid json", "utf-8");
 
     await expect(loadConfig(testDir)).rejects.toThrow("JSON形式が不正です");
+  });
+});
+
+describe("groa config set", () => {
+  it("models.sonnet を更新できる", async () => {
+    await runInit("anthropic", testDir);
+    await runConfigSet("models.sonnet", "claude-sonnet-4-6-20250227", testDir);
+
+    const config = await loadConfig(testDir);
+    expect(config.models.sonnet).toBe("claude-sonnet-4-6-20250227");
+  });
+
+  it("models.haiku を更新できる", async () => {
+    await runInit("anthropic", testDir);
+    await runConfigSet("models.haiku", "claude-haiku-4-5-20251001", testDir);
+
+    const config = await loadConfig(testDir);
+    expect(config.models.haiku).toBe("claude-haiku-4-5-20251001");
+  });
+
+  it("backend を更新できる", async () => {
+    await runInit("anthropic", testDir);
+    await runConfigSet("backend", "openrouter", testDir);
+
+    const config = await loadConfig(testDir);
+    expect(config.backend).toBe("openrouter");
+  });
+
+  it("groa.json が存在しない場合はエラーを投げる", async () => {
+    await expect(
+      runConfigSet("models.sonnet", "test", testDir),
+    ).rejects.toThrow("groa.json が見つかりません");
+  });
+
+  it("不正な backend 値はバリデーションエラー", async () => {
+    await runInit("anthropic", testDir);
+    await expect(
+      runConfigSet("backend", "invalid-backend", testDir),
+    ).rejects.toThrow("設定値が不正です");
   });
 });
 
