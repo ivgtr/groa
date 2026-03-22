@@ -15,8 +15,16 @@
     "test": "vitest run --project cli"
   },
   "dependencies": {
+    "@groa/analyze": "workspace:*",
+    "@groa/classify": "workspace:*",
     "@groa/config": "workspace:*",
+    "@groa/embed": "workspace:*",
+    "@groa/generate": "workspace:*",
+    "@groa/llm-client": "workspace:*",
     "@groa/pipeline": "workspace:*",
+    "@groa/preprocess": "workspace:*",
+    "@groa/stats": "workspace:*",
+    "@groa/synthesize": "workspace:*",
     "@groa/types": "workspace:*",
     "commander": "^14.0.3"
   }
