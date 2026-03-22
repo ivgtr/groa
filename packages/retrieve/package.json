@@ -15,6 +15,7 @@
     "test": "vitest run --project retrieve"
   },
   "dependencies": {
-    "@groa/types": "workspace:*"
+    "@groa/types": "workspace:*",
+    "@groa/embed": "workspace:*"
   }
 }
