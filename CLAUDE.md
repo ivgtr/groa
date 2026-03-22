@@ -14,7 +14,7 @@ packages/
 ├── types/        # 共有型定義・Zodスキーマ
 ├── config/       # 設定管理（groa.json）
 ├── convert/      # 外部JSON変換（フィールドマッピング・フォーマット検出）
-├── llm-client/   # LLM API抽象層（api / claude-code）
+├── llm-client/   # LLM API抽象層（anthropic / openrouter / claude-code）
 ├── preprocess/   # Step 0: 前処理
 ├── stats/        # Step 1: 統計的文体分析（kuromoji.js）
 ├── classify/     # Step 2: 分類（Haiku）

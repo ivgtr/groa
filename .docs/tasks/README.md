@@ -63,9 +63,14 @@
 | [T16.1.4](items/T16.1.4.md) | パイプライン結合テスト | Must | M | Done | T16.1.1, T13.1.1〜T13.2.2 |
 | [T16.2.1](items/T16.2.1.md) | README作成 | Must | M | Done | T14.1.4 |
 | [T16.2.2](items/T16.2.2.md) | セキュリティ対応 | Must | M | Done | T3.1.1, T2.1.2 |
+| [T17.1.1](items/T17.1.1.md) | BackendType 再定義・ModelsSchema デフォルト値撤廃 | Must | M | Done | - |
+| [T17.1.2](items/T17.1.2.md) | api-backend → anthropic-backend リネーム | Must | S | Done | T17.1.1 |
+| [T17.2.1](items/T17.2.1.md) | OpenRouterBackend 実装・ファクトリ統合 | Must | M | Done | T17.1.2 |
+| [T17.3.1](items/T17.3.1.md) | groa init モデル指定オプション追加 | Must | S | Done | T17.1.1 |
+| [T17.3.2](items/T17.3.2.md) | groa config set サブコマンド追加 | Must | M | Done | T17.3.1 |
 
 ## 進捗サマリ
-- Must: 38/38 完了
+- Must: 43/43 完了
 - Should: 9/9 完了
 - Could: 0/1 完了
 
