@@ -15,8 +15,9 @@
     "test": "vitest run --project cli"
   },
   "dependencies": {
-    "@groa/types": "workspace:*",
     "@groa/config": "workspace:*",
-    "@groa/pipeline": "workspace:*"
+    "@groa/pipeline": "workspace:*",
+    "@groa/types": "workspace:*",
+    "commander": "^14.0.3"
   }
 }
