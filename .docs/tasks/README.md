@@ -26,11 +26,11 @@
 | [T3.2.1](items/T3.2.1.md) | Anthropic Messages API クライアント | Must | M | Done | T3.1.1 |
 | [T3.2.2](items/T3.2.2.md) | Batch API 対応 | Should | M | Todo | T3.2.1 |
 | [T3.2.3](items/T3.2.3.md) | Prompt Caching 対応 | Should | S | Todo | T3.2.1 |
-| [T3.3.1](items/T3.3.1.md) | Claude Code CLI バックエンド実装 | Must | M | Todo | T3.1.1 |
-| [T4.1.1](items/T4.1.1.md) | テキスト正規化・フィルタリング・TweetCorpus生成 | Must | M | Todo | T1.2.1 |
-| [T5.1.1](items/T5.1.1.md) | kuromoji.jsセットアップ・文字数/文字種分析 | Must | M | Todo | T1.2.2, T4.1.1 |
-| [T5.1.2](items/T5.1.2.md) | 句読点パターン・語尾パターン抽出 | Must | M | Todo | T5.1.1 |
-| [T5.1.3](items/T5.1.3.md) | 頻出語彙・n-gram・絵文字・時間帯・構造分析 | Must | M | Todo | T5.1.1 |
+| [T3.3.1](items/T3.3.1.md) | Claude Code CLI バックエンド実装 | Must | M | Done | T3.1.1 |
+| [T4.1.1](items/T4.1.1.md) | テキスト正規化・フィルタリング・TweetCorpus生成 | Must | M | Done | T1.2.1 |
+| [T5.1.1](items/T5.1.1.md) | kuromoji.jsセットアップ・文字数/文字種分析 | Must | M | Done | T1.2.2, T4.1.1 |
+| [T5.1.2](items/T5.1.2.md) | 句読点パターン・語尾パターン抽出 | Must | M | Done | T5.1.1 |
+| [T5.1.3](items/T5.1.3.md) | 頻出語彙・n-gram・絵文字・時間帯・構造分析 | Must | M | Done | T5.1.1 |
 | [T6.1.1](items/T6.1.1.md) | 分類プロンプト構築・バッチ分割・実行 | Must | M | Todo | T1.2.2, T3.2.1, T3.2.2, T3.3.1 |
 | [T6.1.2](items/T6.1.2.md) | レスポンスパース・フォールバック・失敗率監視 | Must | M | Todo | T6.1.1 |
 | [T7.1.1](items/T7.1.1.md) | クラスタ構築・固有StyleStats再集計 | Must | M | Todo | T1.2.2, T5.1.2, T6.1.2 |
@@ -43,9 +43,9 @@
 | [T12.1.1](items/T12.1.1.md) | 評価プロンプト構築・スコア算出・合格判定 | Must | M | Todo | T1.2.3, T3.1.1, T10.1.1, T11.1.1 |
 | [T13.1.1](items/T13.1.1.md) | ビルドフェーズオーケストレーション（Step 0-5） | Must | M | Todo | T4.1.1〜T9.1.2 |
 | [T13.1.2](items/T13.1.2.md) | ジェネレートフェーズオーケストレーション（Step 6-8） | Must | M | Todo | T10.1.1〜T12.1.1 |
-| [T13.2.1](items/T13.2.1.md) | 中間結果永続化・入力ハッシュスキップ | Must | M | Todo | T2.1.1 |
-| [T13.2.2](items/T13.2.2.md) | 進捗表示・コスト上限ガード | Must | M | Todo | T3.1.2 |
-| [T14.1.1](items/T14.1.1.md) | CLI基盤・init・configコマンド | Must | M | Todo | T2.1.2 |
+| [T13.2.1](items/T13.2.1.md) | 中間結果永続化・入力ハッシュスキップ | Must | M | Done | T2.1.1 |
+| [T13.2.2](items/T13.2.2.md) | 進捗表示・コスト上限ガード | Must | M | Done | T3.1.2 |
+| [T14.1.1](items/T14.1.1.md) | CLI基盤・init・configコマンド | Must | M | Done | T2.1.2 |
 | [T14.1.2](items/T14.1.2.md) | build・stepコマンド | Must | M | Todo | T14.1.1, T13.1.1, T13.2.2 |
 | [T14.1.3](items/T14.1.3.md) | generateコマンド | Must | M | Todo | T14.1.1, T13.1.2 |
 | [T14.1.4](items/T14.1.4.md) | inspect・cost・cleanコマンド・UX | Must | M | Todo | T14.1.1, T13.2.1 |
@@ -57,7 +57,7 @@
 | [T15.2.3](items/T15.2.3.md) | ペルソナ閲覧・ビジュアライズ | Should | M | Todo | T15.1.3, T15.2.2 |
 | [T15.2.4](items/T15.2.4.md) | テキスト生成・評価結果表示 | Should | M | Todo | T15.2.2, T13.1.2 |
 | [T15.2.5](items/T15.2.5.md) | 設定フォームUI・エクスポート機能 | Could | M | Todo | T15.1.3, T2.1.1 |
-| [T16.1.1](items/T16.1.1.md) | テスト基盤・フィクスチャ・合成データセット | Must | M | Todo | T1.1.1, T1.2.1 |
+| [T16.1.1](items/T16.1.1.md) | テスト基盤・フィクスチャ・合成データセット | Must | M | Done | T1.1.1, T1.2.1 |
 | [T16.1.2](items/T16.1.2.md) | ローカル処理パッケージのユニットテスト | Must | M | Todo | T16.1.1, T4.1.1, T5.1.3, T10.1.1 |
 | [T16.1.3](items/T16.1.3.md) | LLM利用パッケージのモック・スナップショットテスト | Must | M | Todo | T16.1.1, T6.1.2〜T12.1.1 |
 | [T16.1.4](items/T16.1.4.md) | パイプライン結合テスト | Must | M | Todo | T16.1.1, T13.1.1〜T13.2.2 |
@@ -65,6 +65,6 @@
 | [T16.2.2](items/T16.2.2.md) | セキュリティ対応 | Must | M | Todo | T3.1.1, T2.1.2 |
 
 ## 進捗サマリ
-- Must: 9/39 完了
+- Must: 18/39 完了
 - Should: 0/8 完了
 - Could: 0/1 完了
