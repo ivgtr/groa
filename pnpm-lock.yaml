@@ -38,9 +38,15 @@ importers:
       '@groa/llm-client':
         specifier: workspace:*
         version: link:../llm-client
+      '@groa/stats':
+        specifier: workspace:*
+        version: link:../stats
       '@groa/types':
         specifier: workspace:*
         version: link:../types
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
 
   packages/classify:
     dependencies:
@@ -50,6 +56,9 @@ importers:
       '@groa/types':
         specifier: workspace:*
         version: link:../types
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
 
   packages/cli:
     dependencies:
@@ -189,6 +198,9 @@ importers:
       '@groa/types':
         specifier: workspace:*
         version: link:../types
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
 
   packages/types:
     dependencies:
