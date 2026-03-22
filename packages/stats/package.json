@@ -15,6 +15,10 @@
     "test": "vitest run --project stats"
   },
   "dependencies": {
-    "@groa/types": "workspace:*"
+    "@groa/types": "workspace:*",
+    "kuromoji": "^0.1.2"
+  },
+  "devDependencies": {
+    "@types/kuromoji": "^0.1.3"
   }
 }
