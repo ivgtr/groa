@@ -25,17 +25,17 @@
 | [T3.1.2](items/T3.1.2.md) | トークン使用量追跡・コスト計算 | Must | M | Done | T3.1.1 |
 | [T3.2.1](items/T3.2.1.md) | Anthropic Messages API クライアント | Must | M | Done | T3.1.1 |
 | [T3.2.2](items/T3.2.2.md) | Batch API 対応 | Should | M | Done | T3.2.1 |
-| [T3.2.3](items/T3.2.3.md) | Prompt Caching 対応 | Should | S | Todo | T3.2.1 |
+| [T3.2.3](items/T3.2.3.md) | Prompt Caching 対応 | Should | S | Done | T3.2.1 |
 | [T3.3.1](items/T3.3.1.md) | Claude Code CLI バックエンド実装 | Must | M | Done | T3.1.1 |
 | [T4.1.1](items/T4.1.1.md) | テキスト正規化・フィルタリング・TweetCorpus生成 | Must | M | Done | T1.2.1 |
 | [T5.1.1](items/T5.1.1.md) | kuromoji.jsセットアップ・文字数/文字種分析 | Must | M | Done | T1.2.2, T4.1.1 |
 | [T5.1.2](items/T5.1.2.md) | 句読点パターン・語尾パターン抽出 | Must | M | Done | T5.1.1 |
 | [T5.1.3](items/T5.1.3.md) | 頻出語彙・n-gram・絵文字・時間帯・構造分析 | Must | M | Done | T5.1.1 |
-| [T6.1.1](items/T6.1.1.md) | 分類プロンプト構築・バッチ分割・実行 | Must | M | Todo | T1.2.2, T3.2.1, T3.2.2, T3.3.1 |
-| [T6.1.2](items/T6.1.2.md) | レスポンスパース・フォールバック・失敗率監視 | Must | M | Todo | T6.1.1 |
-| [T7.1.1](items/T7.1.1.md) | クラスタ構築・固有StyleStats再集計 | Must | M | Todo | T1.2.2, T5.1.2, T6.1.2 |
-| [T7.1.2](items/T7.1.2.md) | LLM分析プロンプト構築・レスポンスパース | Must | M | Todo | T7.1.1, T3.1.1 |
-| [T8.1.1](items/T8.1.1.md) | 合成プロンプト構築・PersonaDocument生成 | Must | M | Todo | T1.2.3, T7.1.2, T5.1.3 |
+| [T6.1.1](items/T6.1.1.md) | 分類プロンプト構築・バッチ分割・実行 | Must | M | Done | T1.2.2, T3.2.1, T3.2.2, T3.3.1 |
+| [T6.1.2](items/T6.1.2.md) | レスポンスパース・フォールバック・失敗率監視 | Must | M | Done | T6.1.1 |
+| [T7.1.1](items/T7.1.1.md) | クラスタ構築・固有StyleStats再集計 | Must | M | Done | T1.2.2, T5.1.2, T6.1.2 |
+| [T7.1.2](items/T7.1.2.md) | LLM分析プロンプト構築・レスポンスパース | Must | M | Done | T7.1.1, T3.1.1 |
+| [T8.1.1](items/T8.1.1.md) | 合成プロンプト構築・PersonaDocument生成 | Must | M | Done | T1.2.3, T7.1.2, T5.1.3 |
 | [T9.1.1](items/T9.1.1.md) | Transformers.jsセットアップ・モデル管理 | Must | M | Done | T1.2.3 |
 | [T9.1.2](items/T9.1.2.md) | バッチEmbedding生成・インデックス永続化 | Must | M | Done | T9.1.1, T4.1.1 |
 | [T10.1.1](items/T10.1.1.md) | Cosine similarity検索・多様性フィルタリング | Must | M | Done | T9.1.2, T1.2.2 |
@@ -65,6 +65,6 @@
 | [T16.2.2](items/T16.2.2.md) | セキュリティ対応 | Must | M | Done | T3.1.1, T2.1.2 |
 
 ## 進捗サマリ
-- Must: 25/39 完了
-- Should: 1/8 完了
+- Must: 30/39 完了
+- Should: 2/8 完了
 - Could: 0/1 完了
