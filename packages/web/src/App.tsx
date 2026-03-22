@@ -2,6 +2,7 @@ import { useAppStore } from "./store.ts";
 import { ApiKeyForm } from "./components/ApiKeyForm.tsx";
 import { ConsentDialog } from "./components/ConsentDialog.tsx";
 import { BuildPanel } from "./components/BuildPanel.tsx";
+import { FormatMappingPanel } from "./components/FormatMappingPanel.tsx";
 import { PersonaView } from "./components/PersonaView.tsx";
 import { GenerateView } from "./components/GenerateView.tsx";
 
@@ -22,6 +23,7 @@ export function App() {
         <ApiKeyForm />
         {apiKey && !hasConsented && <ConsentDialog />}
         {apiKey && hasConsented && view === "upload" && <BuildPanel />}
+        {apiKey && hasConsented && view === "mapping" && <FormatMappingPanel />}
         {apiKey && hasConsented && view === "building" && <BuildPanel />}
         {apiKey && hasConsented && view === "persona" && <PersonaView />}
         {apiKey && hasConsented && view === "generate" && <GenerateView />}

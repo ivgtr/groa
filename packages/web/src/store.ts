@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { DetectFormatResult } from "@groa/convert";
 
 export interface BuildStep {
   name: string;
@@ -21,7 +22,7 @@ export interface GenerationResult {
 
 export interface AppState {
   /** 現在のビュー */
-  view: "upload" | "building" | "persona" | "generate";
+  view: "upload" | "mapping" | "building" | "persona" | "generate";
   /** ビューを切り替える */
   setView: (view: AppState["view"]) => void;
 
@@ -47,6 +48,15 @@ export interface AppState {
   setUploadError: (error: string | null) => void;
   /** ツイートデータをクリアする */
   clearTweets: () => void;
+
+  /** 変換前の生データ（マッピング確定後に破棄） */
+  rawData: unknown[] | null;
+  /** フォーマット検出結果 */
+  detectedFormat: DetectFormatResult | null;
+  /** 生データを設定し mapping ビューに遷移する */
+  setRawData: (data: unknown[], detected: DetectFormatResult) => void;
+  /** 生データをクリアする */
+  clearRawData: () => void;
 
   /** ビルドステップ一覧 */
   buildSteps: BuildStep[];
@@ -94,9 +104,16 @@ export const useAppStore = create<AppState>((set) => ({
   tweets: null,
   tweetCount: 0,
   uploadError: null,
-  setTweets: (tweets, count) => set({ tweets, tweetCount: count, uploadError: null }),
+  setTweets: (tweets, count) =>
+    set({ tweets, tweetCount: count, uploadError: null, rawData: null, detectedFormat: null, view: "upload" }),
   setUploadError: (uploadError) => set({ uploadError }),
   clearTweets: () => set({ tweets: null, tweetCount: 0, uploadError: null }),
+
+  rawData: null,
+  detectedFormat: null,
+  setRawData: (rawData, detectedFormat) =>
+    set({ rawData, detectedFormat, view: "mapping", uploadError: null }),
+  clearRawData: () => set({ rawData: null, detectedFormat: null, view: "upload" }),
 
   buildSteps: [],
   buildError: null,

@@ -1,12 +1,45 @@
 import { useCallback, useRef, useState } from "react";
 import { useAppStore } from "../store.ts";
+import { detectFormat } from "@groa/convert";
 
 const MIN_TWEETS = 10;
 const MAX_TWEETS = 50000;
 const WARN_THRESHOLD = 100;
 
+/**
+ * パースされた配列を検証し、フォーマット検出を行う共通ロジック。
+ * groa ネイティブ形式ならそのまま setTweets、それ以外なら setRawData でマッピング画面へ。
+ */
+function processJsonArray(
+  parsed: unknown[],
+  setTweets: (tweets: unknown[], count: number) => void,
+  setRawData: (data: unknown[], detected: ReturnType<typeof detectFormat>) => void,
+  setUploadError: (error: string | null) => void,
+): void {
+  if (parsed.length < MIN_TWEETS) {
+    setUploadError(
+      `データ件数が少なすぎます（${String(parsed.length)}件）。最低${String(MIN_TWEETS)}件必要です。`,
+    );
+    return;
+  }
+  if (parsed.length > MAX_TWEETS) {
+    setUploadError(
+      `データ件数が多すぎます（${String(parsed.length)}件）。最大${String(MAX_TWEETS)}件まで対応しています。`,
+    );
+    return;
+  }
+
+  const detected = detectFormat(parsed);
+
+  if (detected.isNativeGroa) {
+    setTweets(parsed, parsed.length);
+  } else {
+    setRawData(parsed, detected);
+  }
+}
+
 export function FileUpload() {
-  const { setTweets, setUploadError, uploadError } = useAppStore();
+  const { setTweets, setRawData, setUploadError, uploadError } = useAppStore();
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -25,19 +58,7 @@ export function FileUpload() {
             setUploadError("JSONファイルの内容が配列ではありません。ツイートデータの配列を含むJSONファイルを選択してください。");
             return;
           }
-          if (parsed.length < MIN_TWEETS) {
-            setUploadError(
-              `ツイート数が少なすぎます（${String(parsed.length)}件）。最低${String(MIN_TWEETS)}件のツイートが必要です。`,
-            );
-            return;
-          }
-          if (parsed.length > MAX_TWEETS) {
-            setUploadError(
-              `ツイート数が多すぎます（${String(parsed.length)}件）。最大${String(MAX_TWEETS)}件まで対応しています。`,
-            );
-            return;
-          }
-          setTweets(parsed, parsed.length);
+          processJsonArray(parsed, setTweets, setRawData, setUploadError);
         } catch {
           setUploadError("JSONファイルの解析に失敗しました。有効なJSONファイルを選択してください。");
         }
@@ -47,7 +68,7 @@ export function FileUpload() {
       };
       reader.readAsText(file);
     },
-    [setTweets, setUploadError],
+    [setTweets, setRawData, setUploadError],
   );
 
   const handleDrop = useCallback(
@@ -164,7 +185,7 @@ export function FileUpload() {
 }
 
 function UrlImport() {
-  const { setTweets, setUploadError } = useAppStore();
+  const { setTweets, setRawData, setUploadError } = useAppStore();
   const [urlInput, setUrlInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -193,16 +214,8 @@ function UrlImport() {
         setUploadError("JSONの内容が配列ではありません。ツイートデータの配列を含むJSONを指定してください。");
         return;
       }
-      if (parsed.length < MIN_TWEETS) {
-        setUploadError(`ツイート数が少なすぎます（${String(parsed.length)}件）。最低${String(MIN_TWEETS)}件必要です。`);
-        return;
-      }
-      if (parsed.length > MAX_TWEETS) {
-        setUploadError(`ツイート数が多すぎます（${String(parsed.length)}件）。最大${String(MAX_TWEETS)}件までです。`);
-        return;
-      }
 
-      setTweets(parsed, parsed.length);
+      processJsonArray(parsed, setTweets, setRawData, setUploadError);
     } catch (error) {
       if (error instanceof SyntaxError) {
         setUploadError("URLから取得したデータのJSON解析に失敗しました。");
@@ -216,7 +229,7 @@ function UrlImport() {
     } finally {
       setIsLoading(false);
     }
-  }, [urlInput, setTweets, setUploadError]);
+  }, [urlInput, setTweets, setRawData, setUploadError]);
 
   return (
     <div className="space-y-3">
