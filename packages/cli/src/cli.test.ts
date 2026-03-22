@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createProgram } from "./index.js";
 import { runInit, runInitInteractive } from "./commands/init.js";
+import type { InitPrompts } from "./commands/init.js";
 import { loadConfig, runConfigSet } from "./commands/config.js";
 import { runInspect } from "./commands/inspect.js";
 import { runCost, collectCostSummary } from "./commands/cost.js";
@@ -150,16 +151,22 @@ describe("groa init", () => {
 });
 
 describe("groa init (interactive)", () => {
-  function mockPrompt(answers: string[]) {
-    return async (_question: string, defaultValue: string): Promise<string> => {
-      const answer = answers.shift();
-      return answer !== undefined && answer !== "" ? answer : defaultValue;
+  function mockPrompts(
+    backend: "anthropic" | "openrouter" | "claude-code",
+    modelAnswers: string[] = ["", "", ""],
+  ): InitPrompts {
+    const answers = [...modelAnswers];
+    return {
+      selectBackend: async () => backend,
+      inputModel: async (_q: string, defaultValue: string) => {
+        const answer = answers.shift();
+        return answer !== undefined && answer !== "" ? answer : defaultValue;
+      },
     };
   }
 
   it("対話モードで claude-code を選択するとティア名がデフォルト設定される", async () => {
-    const prompt = mockPrompt(["claude-code", "", "", ""]);
-    await runInitInteractive(testDir, prompt);
+    await runInitInteractive(testDir, mockPrompts("claude-code"));
 
     const config = JSON.parse(await readFile(join(testDir, "groa.json"), "utf-8")) as Record<string, unknown>;
     expect(config.backend).toBe("claude-code");
@@ -170,8 +177,7 @@ describe("groa init (interactive)", () => {
   });
 
   it("対話モードでカスタムモデルを指定できる", async () => {
-    const prompt = mockPrompt(["claude-code", "", "claude-sonnet-4-6-20250227", ""]);
-    await runInitInteractive(testDir, prompt);
+    await runInitInteractive(testDir, mockPrompts("claude-code", ["", "claude-sonnet-4-6-20250227", ""]));
 
     const config = JSON.parse(await readFile(join(testDir, "groa.json"), "utf-8")) as Record<string, unknown>;
     const models = config.models as Record<string, string | null>;
@@ -181,8 +187,7 @@ describe("groa init (interactive)", () => {
   });
 
   it("対話モードで anthropic を選択した場合モデルは null のまま", async () => {
-    const prompt = mockPrompt(["anthropic", "", "", ""]);
-    await runInitInteractive(testDir, prompt);
+    await runInitInteractive(testDir, mockPrompts("anthropic"));
 
     const config = JSON.parse(await readFile(join(testDir, "groa.json"), "utf-8")) as Record<string, unknown>;
     expect(config.backend).toBe("anthropic");
@@ -190,11 +195,6 @@ describe("groa init (interactive)", () => {
     expect(models.haiku).toBeNull();
     expect(models.sonnet).toBeNull();
     expect(models.opus).toBeNull();
-  });
-
-  it("不正なバックエンド名でエラーを投げる", async () => {
-    const prompt = mockPrompt(["invalid"]);
-    await expect(runInitInteractive(testDir, prompt)).rejects.toThrow("不正なバックエンド");
   });
 });
 

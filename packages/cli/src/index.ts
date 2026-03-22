@@ -33,6 +33,7 @@ export function createProgram(): Command {
 }
 
 export { initCommand, runInit, runInitInteractive } from "./commands/init.js";
+export type { InitPrompts } from "./commands/init.js";
 export { configCommand, loadConfig } from "./commands/config.js";
 export { buildCommand, runBuildCommand } from "./commands/build.js";
 export { stepCommand, runStepCommand } from "./commands/step.js";

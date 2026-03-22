@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import select from "@inquirer/select";
 import { writeFile, access } from "node:fs/promises";
 import { createInterface } from "node:readline";
 import { join } from "node:path";
@@ -6,6 +7,12 @@ import { createDefaultConfig, BACKENDS } from "@groa/config";
 import type { BackendType } from "@groa/config";
 
 const CONFIG_FILE = "groa.json";
+
+const BACKEND_CHOICES: { name: string; value: BackendType; description: string }[] = [
+  { name: "anthropic（推奨）", value: "anthropic", description: "Anthropic Messages API を直接呼び出す。Batch API・Prompt Caching 対応" },
+  { name: "openrouter", value: "openrouter", description: "OpenRouter 経由で各種モデルにアクセス" },
+  { name: "claude-code", value: "claude-code", description: "Claude Code CLI をサブプロセスとして利用。APIキー不要" },
+];
 
 interface InitOptions {
   backend?: string;
@@ -86,38 +93,21 @@ export async function runInit(
   return filePath;
 }
 
+/** DI 用の対話インターフェース */
+export interface InitPrompts {
+  selectBackend: () => Promise<BackendType>;
+  inputModel: (question: string, defaultValue: string) => Promise<string>;
+}
+
 /** 対話形式で groa.json を生成する */
 export async function runInitInteractive(
   cwd = process.cwd(),
-  promptFn?: (question: string, defaultValue: string) => Promise<string>,
+  prompts?: InitPrompts,
 ): Promise<string> {
-  if (promptFn) {
-    return runInitWithPrompt(cwd, promptFn);
-  }
-  const rl = createReadlineHelper();
-  try {
-    return await runInitWithPrompt(cwd, rl.prompt);
-  } finally {
-    rl.close();
-  }
-}
+  const p = prompts ?? createDefaultPrompts();
 
-async function runInitWithPrompt(
-  cwd: string,
-  prompt: (question: string, defaultValue: string) => Promise<string>,
-): Promise<string> {
-  // 1. バックエンド選択
-  const backendInput = await prompt(
-    "バックエンド種別を選択してください (anthropic / openrouter / claude-code)",
-    "anthropic",
-  );
-  if (!BACKENDS.includes(backendInput as BackendType)) {
-    throw new Error(
-      `不正なバックエンド: "${backendInput}"。` +
-        `選択肢: ${BACKENDS.join(", ")}`,
-    );
-  }
-  const backend = backendInput as BackendType;
+  // 1. バックエンド選択（セレクト式）
+  const backend = await p.selectBackend();
 
   // 2. モデル設定（claude-code はティア名がデフォルト、他は空）
   const defaults = backend === "claude-code"
@@ -125,9 +115,9 @@ async function runInitWithPrompt(
     : { haiku: "", sonnet: "", opus: "" };
 
   console.log("\nモデルの設定（Enter でデフォルト値を使用）:");
-  const haiku = await prompt("  haiku ティア", defaults.haiku);
-  const sonnet = await prompt("  sonnet ティア", defaults.sonnet);
-  const opus = await prompt("  opus ティア", defaults.opus);
+  const haiku = await p.inputModel("  haiku ティア", defaults.haiku);
+  const sonnet = await p.inputModel("  sonnet ティア", defaults.sonnet);
+  const opus = await p.inputModel("  opus ティア", defaults.opus);
 
   // 3. runInit に委譲
   const filePath = await runInit(backend, cwd, {
@@ -140,20 +130,24 @@ async function runInitWithPrompt(
   return filePath;
 }
 
-function createReadlineHelper(): {
-  prompt: (question: string, defaultValue: string) => Promise<string>;
-  close: () => void;
-} {
-  const rl = createInterface({ input: process.stdin, output: process.stderr });
+/** デフォルトの対話実装（実際の端末 I/O を使用） */
+function createDefaultPrompts(): InitPrompts {
   return {
-    prompt: (question, defaultValue) => {
+    selectBackend: () =>
+      select<BackendType>({
+        message: "バックエンド種別を選択してください",
+        choices: BACKEND_CHOICES,
+        default: "anthropic" as BackendType,
+      }),
+    inputModel: (question, defaultValue) => {
+      const rl = createInterface({ input: process.stdin, output: process.stderr });
       const suffix = defaultValue ? ` [${defaultValue}]` : "";
       return new Promise((resolve) => {
         rl.question(`${question}${suffix}: `, (answer) => {
+          rl.close();
           resolve(answer.trim() || defaultValue);
         });
       });
     },
-    close: () => rl.close(),
   };
 }
