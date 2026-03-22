@@ -131,13 +131,34 @@ describe("resolveStepConfig", () => {
       expect(resolved.apiKey).toBeNull();
     });
 
-    it("モデル解決は anthropic バックエンドと同じ優先順位", () => {
+    it("工程別モデル指定が最優先される", () => {
       const config = GroaConfigSchema.parse({
         backend: "claude-code",
         steps: { classify: { model: "custom-model" } },
       });
       const resolved = resolveStepConfig(config, "classify", {});
       expect(resolved.model).toBe("custom-model");
+    });
+
+    it("models.{tier} が null の場合、ティア名をフォールバックとして返す", () => {
+      const config = GroaConfigSchema.parse({ backend: "claude-code" });
+      const resolved = resolveStepConfig(config, "classify", {});
+      expect(resolved.model).toBe("haiku");
+    });
+
+    it("ティアなし工程で models.sonnet が null の場合、'sonnet' にフォールバック", () => {
+      const config = GroaConfigSchema.parse({ backend: "claude-code" });
+      const resolved = resolveStepConfig(config, "preprocess", {});
+      expect(resolved.model).toBe("sonnet");
+    });
+
+    it("models.{tier} が設定済みならその値を使用する", () => {
+      const config = GroaConfigSchema.parse({
+        backend: "claude-code",
+        models: { opus: "claude-opus-4-6-20250313" },
+      });
+      const resolved = resolveStepConfig(config, "synthesize", {});
+      expect(resolved.model).toBe("claude-opus-4-6-20250313");
     });
   });
 

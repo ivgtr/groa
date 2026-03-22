@@ -55,7 +55,8 @@ export function resolveStepConfig(
   }
 
   // claude-code バックエンド
-  const model = resolveModel(config, stepConfig, tier, stepName);
+  const model = tryResolveModel(config, stepConfig, tier)
+    ?? ModelIdString(tier ?? "sonnet");
   return { backend: "claude-code", apiKey: null, model, params };
 }
 
@@ -84,12 +85,15 @@ function resolveApiKey(
   return env["ANTHROPIC_API_KEY"] ?? null;
 }
 
-function resolveModel(
+/**
+ * モデルを解決する（副作用なし）。
+ * 設定から見つからない場合は null を返す。
+ */
+function tryResolveModel(
   config: GroaConfig,
   stepConfig: Record<string, unknown> | undefined,
   tier: "haiku" | "sonnet" | "opus" | undefined,
-  stepName: string,
-): ModelIdString {
+): ModelIdString | null {
   // 1. 工程別指定
   const stepModel = stepConfig?.["model"];
   if (typeof stepModel === "string") return ModelIdString(stepModel);
@@ -97,24 +101,31 @@ function resolveModel(
   // 2. グローバル設定（ティア指定がある場合）
   if (tier) {
     const modelId = config.models[tier];
-    if (!modelId) {
-      throw new Error(
-        `モデルが設定されていません (step: ${stepName}, tier: ${tier})。` +
-          `groa config set models.${tier} <model-id> を実行してください。`,
-      );
-    }
-    return ModelIdString(modelId);
+    return modelId ? ModelIdString(modelId) : null;
   }
 
   // 3. フォールバック（ティアなしの工程: preprocess, stats, retrieve 等）
-  const fallback = config.models.sonnet;
-  if (!fallback) {
-    throw new Error(
-      `モデルが設定されていません (step: ${stepName})。` +
-        `groa config set models.sonnet <model-id> を実行してください。`,
-    );
-  }
-  return ModelIdString(fallback);
+  return config.models.sonnet ? ModelIdString(config.models.sonnet) : null;
+}
+
+/**
+ * モデルを解決する。見つからない場合はエラーを throw する。
+ * anthropic / openrouter バックエンド用。
+ */
+function resolveModel(
+  config: GroaConfig,
+  stepConfig: Record<string, unknown> | undefined,
+  tier: "haiku" | "sonnet" | "opus" | undefined,
+  stepName: string,
+): ModelIdString {
+  const model = tryResolveModel(config, stepConfig, tier);
+  if (model) return model;
+
+  const tierHint = tier ?? "sonnet";
+  throw new Error(
+    `モデルが設定されていません (step: ${stepName}, tier: ${tierHint})。` +
+      `groa config set models.${tierHint} <model-id> を実行してください。`,
+  );
 }
 
 function extractParams(
