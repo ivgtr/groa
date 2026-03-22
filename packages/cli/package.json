@@ -18,6 +18,7 @@
     "@groa/analyze": "workspace:*",
     "@groa/classify": "workspace:*",
     "@groa/config": "workspace:*",
+    "@groa/convert": "workspace:*",
     "@groa/embed": "workspace:*",
     "@groa/generate": "workspace:*",
     "@groa/llm-client": "workspace:*",
