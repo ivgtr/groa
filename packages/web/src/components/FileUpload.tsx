@@ -137,6 +137,8 @@ export function FileUpload() {
         className="hidden"
       />
 
+      <UrlImport />
+
       {uploadError && (
         <div className="rounded-md border border-red-300 bg-red-50 p-4">
           <div className="flex items-start gap-2">
@@ -157,6 +159,97 @@ export function FileUpload() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function UrlImport() {
+  const { setTweets, setUploadError } = useAppStore();
+  const [urlInput, setUrlInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleFetch = useCallback(async () => {
+    const trimmed = urlInput.trim();
+    if (!trimmed) return;
+
+    if (!/^https?:\/\//i.test(trimmed)) {
+      setUploadError("URLは http:// または https:// で始まる必要があります。");
+      return;
+    }
+
+    setIsLoading(true);
+    setUploadError(null);
+
+    try {
+      const response = await fetch(trimmed);
+      if (!response.ok) {
+        setUploadError(`URLの読み込みに失敗しました（HTTP ${String(response.status)}）`);
+        return;
+      }
+      const text = await response.text();
+      const parsed: unknown = JSON.parse(text);
+
+      if (!Array.isArray(parsed)) {
+        setUploadError("JSONの内容が配列ではありません。ツイートデータの配列を含むJSONを指定してください。");
+        return;
+      }
+      if (parsed.length < MIN_TWEETS) {
+        setUploadError(`ツイート数が少なすぎます（${String(parsed.length)}件）。最低${String(MIN_TWEETS)}件必要です。`);
+        return;
+      }
+      if (parsed.length > MAX_TWEETS) {
+        setUploadError(`ツイート数が多すぎます（${String(parsed.length)}件）。最大${String(MAX_TWEETS)}件までです。`);
+        return;
+      }
+
+      setTweets(parsed, parsed.length);
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        setUploadError("URLから取得したデータのJSON解析に失敗しました。");
+      } else if (error instanceof TypeError) {
+        setUploadError(
+          "このURLはブラウザのCORS制限により直接読み込めません。JSONファイルをダウンロードしてからファイルアップロードをご利用ください。",
+        );
+      } else {
+        setUploadError("URLからのデータ取得に失敗しました。");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [urlInput, setTweets, setUploadError]);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1 bg-gray-200" />
+        <span className="text-xs text-gray-400">またはURLから読み込み</span>
+        <div className="h-px flex-1 bg-gray-200" />
+      </div>
+      <div className="flex gap-2">
+        <input
+          type="url"
+          value={urlInput}
+          onChange={(e) => setUrlInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") void handleFetch(); }}
+          placeholder="https://example.com/tweets.json"
+          disabled={isLoading}
+          className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+        />
+        <button
+          type="button"
+          onClick={() => void handleFetch()}
+          disabled={isLoading || !urlInput.trim()}
+          className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading && (
+            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          )}
+          読み込み
+        </button>
+      </div>
     </div>
   );
 }
