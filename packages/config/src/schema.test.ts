@@ -4,16 +4,16 @@ import { GroaConfigSchema, createDefaultConfig } from "./schema.js";
 describe("GroaConfigSchema", () => {
   it("空オブジェクトからデフォルト値で設定を生成できる", () => {
     const config = GroaConfigSchema.parse({});
-    expect(config.backend).toBe("api");
+    expect(config.backend).toBe("anthropic");
     expect(config.cacheDir).toBe(".groa");
     expect(config.costLimitUsd).toBe(10.0);
   });
 
-  it("デフォルトのモデルIDが設定される", () => {
+  it("デフォルトではモデルIDは未設定（null）", () => {
     const config = createDefaultConfig();
-    expect(config.models.haiku).toBe("claude-haiku-4-5-20251001");
-    expect(config.models.sonnet).toBe("claude-sonnet-4-6-20250227");
-    expect(config.models.opus).toBe("claude-opus-4-6-20250313");
+    expect(config.models.haiku).toBeNull();
+    expect(config.models.sonnet).toBeNull();
+    expect(config.models.opus).toBeNull();
     expect(config.models.embedding).toBe("multilingual-e5-small");
   });
 

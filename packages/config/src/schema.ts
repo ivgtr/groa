@@ -2,7 +2,7 @@ import { z } from "zod/v4";
 
 // --- Backend ---
 
-export const BACKENDS = ["api", "claude-code"] as const;
+export const BACKENDS = ["anthropic", "openrouter", "claude-code"] as const;
 export const BackendTypeSchema = z.enum(BACKENDS);
 export type BackendType = z.infer<typeof BackendTypeSchema>;
 
@@ -11,6 +11,7 @@ export type BackendType = z.infer<typeof BackendTypeSchema>;
 const ApiKeysSchema = z
   .object({
     anthropic: z.string().optional(),
+    openrouter: z.string().optional(),
   })
   .default(() => ({}));
 
@@ -28,15 +29,15 @@ const ClaudeCodeSchema = z
 
 const ModelsSchema = z
   .object({
-    haiku: z.string().default("claude-haiku-4-5-20251001"),
-    sonnet: z.string().default("claude-sonnet-4-6-20250227"),
-    opus: z.string().default("claude-opus-4-6-20250313"),
+    haiku: z.string().nullable().default(null),
+    sonnet: z.string().nullable().default(null),
+    opus: z.string().nullable().default(null),
     embedding: z.string().default("multilingual-e5-small"),
   })
   .default(() => ({
-    haiku: "claude-haiku-4-5-20251001",
-    sonnet: "claude-sonnet-4-6-20250227",
-    opus: "claude-opus-4-6-20250313",
+    haiku: null,
+    sonnet: null,
+    opus: null,
     embedding: "multilingual-e5-small",
   }));
 
@@ -144,7 +145,7 @@ const StepsSchema = z
 // --- GroaConfig ---
 
 export const GroaConfigSchema = z.object({
-  backend: BackendTypeSchema.default("api"),
+  backend: BackendTypeSchema.default("anthropic"),
   apiKeys: ApiKeysSchema,
   claudeCode: ClaudeCodeSchema,
   models: ModelsSchema,
