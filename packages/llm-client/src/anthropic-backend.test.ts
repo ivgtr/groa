@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ModelIdString } from "@groa/types";
 import type { ResolvedStepConfig } from "@groa/config";
-import { ApiBackend, maskApiKey } from "./api-backend.js";
+import { AnthropicBackend, maskApiKey } from "./anthropic-backend.js";
 import type { LlmRequest } from "./types.js";
 
 function createConfig(
   overrides: Partial<ResolvedStepConfig> = {},
 ): ResolvedStepConfig {
   return {
-    backend: "api",
+    backend: "anthropic",
     apiKey: "sk-test-key-12345678",
     model: ModelIdString("claude-sonnet-4-6-20250227"),
     params: {},
@@ -59,7 +59,7 @@ describe("maskApiKey", () => {
   });
 });
 
-describe("ApiBackend", () => {
+describe("AnthropicBackend", () => {
   let originalFetch: typeof globalThis.fetch;
 
   beforeEach(() => {
@@ -72,7 +72,7 @@ describe("ApiBackend", () => {
 
   it("APIキーなしで作成するとエラー", () => {
     expect(
-      () => new ApiBackend(createConfig({ apiKey: null })),
+      () => new AnthropicBackend(createConfig({ apiKey: null })),
     ).toThrow("APIキーが設定されていません");
   });
 
@@ -83,7 +83,7 @@ describe("ApiBackend", () => {
       usage: { input_tokens: 100, output_tokens: 50 },
     }) as unknown as typeof fetch;
 
-    const backend = new ApiBackend(createConfig());
+    const backend = new AnthropicBackend(createConfig());
     const response = await backend.complete(createRequest());
 
     expect(response.content).toBe("Hello back!");
@@ -100,7 +100,7 @@ describe("ApiBackend", () => {
     });
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    const backend = new ApiBackend(createConfig());
+    const backend = new AnthropicBackend(createConfig());
     await backend.complete(createRequest());
 
     const callBody = JSON.parse(
@@ -120,7 +120,7 @@ describe("ApiBackend", () => {
     });
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    const backend = new ApiBackend(createConfig());
+    const backend = new AnthropicBackend(createConfig());
     await backend.complete(
       createRequest({
         options: { temperature: 0.7, useCache: false, useBatch: false },
@@ -141,7 +141,7 @@ describe("ApiBackend", () => {
     });
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    const backend = new ApiBackend(createConfig(), true);
+    const backend = new AnthropicBackend(createConfig(), true);
     await backend.complete(createRequest());
 
     const callHeaders = fetchMock.mock.calls[0][1].headers as Record<
@@ -159,7 +159,7 @@ describe("ApiBackend", () => {
       401,
     ) as unknown as typeof fetch;
 
-    const backend = new ApiBackend(createConfig());
+    const backend = new AnthropicBackend(createConfig());
     await expect(backend.complete(createRequest())).rejects.toThrow(
       "Anthropic API エラー (401)",
     );
@@ -177,14 +177,14 @@ describe("ApiBackend", () => {
       },
     }) as unknown as typeof fetch;
 
-    const backend = new ApiBackend(createConfig());
+    const backend = new AnthropicBackend(createConfig());
     const response = await backend.complete(createRequest());
     expect(response.cachedTokens).toBe(90);
   });
 
-  it("backendType() は 'api' を返す", () => {
-    const backend = new ApiBackend(createConfig());
-    expect(backend.backendType()).toBe("api");
+  it("backendType() は 'anthropic' を返す", () => {
+    const backend = new AnthropicBackend(createConfig());
+    expect(backend.backendType()).toBe("anthropic");
   });
 
   it("useCache: true で system に cache_control を設定する", async () => {
@@ -195,7 +195,7 @@ describe("ApiBackend", () => {
     });
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    const backend = new ApiBackend(createConfig());
+    const backend = new AnthropicBackend(createConfig());
     await backend.complete(
       createRequest({
         options: { temperature: 0.0, useCache: true, useBatch: false },
@@ -223,7 +223,7 @@ describe("ApiBackend", () => {
     });
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-    const backend = new ApiBackend(createConfig());
+    const backend = new AnthropicBackend(createConfig());
     await backend.complete(
       createRequest({
         options: { temperature: 0.0, useCache: false, useBatch: false },

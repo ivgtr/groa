@@ -3,16 +3,7 @@ import type { ResolvedStepConfig } from "@groa/config";
 import type { LlmBackend, LlmRequest, LlmResponse } from "./types.js";
 import { withRetry, RateLimitError } from "./retry.js";
 
-/** 非リトライ対象のAPIエラー */
-export class ApiError extends Error {
-  statusCode: number;
-  nonRetryable = false;
-  constructor(message: string, statusCode: number) {
-    super(message);
-    this.name = "ApiError";
-    this.statusCode = statusCode;
-  }
-}
+import { ApiError } from "./errors.js";
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_VERSION = "2023-06-01";
@@ -59,7 +50,7 @@ interface AnthropicResponseBody {
 }
 
 /** Anthropic Messages API バックエンド */
-export class ApiBackend implements LlmBackend {
+export class AnthropicBackend implements LlmBackend {
   private readonly apiKey: string;
   private readonly modelId: string;
   private readonly isBrowser: boolean;
@@ -77,8 +68,8 @@ export class ApiBackend implements LlmBackend {
     this.isBrowser = isBrowser;
   }
 
-  backendType(): "api" {
-    return "api";
+  backendType(): "anthropic" {
+    return "anthropic";
   }
 
   async complete(request: LlmRequest): Promise<LlmResponse> {
