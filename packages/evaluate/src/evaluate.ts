@@ -49,7 +49,6 @@ export async function evaluate(
   );
 
   const request: LlmRequest = {
-    model: "sonnet",
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },

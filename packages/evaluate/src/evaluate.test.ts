@@ -279,7 +279,7 @@ describe("evaluate", () => {
     vi.restoreAllMocks();
   });
 
-  it("Sonnetモデル・temperature 0.0でリクエストする", async () => {
+  it("temperature 0.0でリクエストする", async () => {
     const generated = makeGeneratedText();
     const evalTweets = [makeTaggedTweet("tech")];
     const persona = makePersonaDocument();
@@ -290,7 +290,6 @@ describe("evaluate", () => {
 
     await evaluate(generated, evalTweets, persona, backend);
 
-    expect(backend.calls[0].model).toBe("sonnet");
     expect(backend.calls[0].options.temperature).toBe(0.0);
   });
 

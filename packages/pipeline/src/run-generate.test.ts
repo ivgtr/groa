@@ -122,9 +122,9 @@ const MOCK_EVALUATED_TEXT: GeneratedText = {
 
 function createTestConfig(): GroaConfig {
   const config = createDefaultConfig();
-  config.models.haiku = "test-haiku";
-  config.models.sonnet = "test-sonnet";
-  config.models.opus = "test-opus";
+  config.models.quick = "test-haiku";
+  config.models.standard = "test-sonnet";
+  config.models.deep = "test-opus";
   config.cacheDir = "/tmp/groa-test-nonexistent-" + Date.now();
   return config;
 }

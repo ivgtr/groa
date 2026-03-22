@@ -1,5 +1,4 @@
 export type {
-  ModelTier,
   Message,
   RequestOptions,
   LlmRequest,

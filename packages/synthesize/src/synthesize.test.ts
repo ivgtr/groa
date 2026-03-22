@@ -357,7 +357,7 @@ describe("synthesize", () => {
     vi.restoreAllMocks();
   });
 
-  it("Opusモデル・temperature 0.2でリクエストする", async () => {
+  it("temperature 0.2でリクエストする", async () => {
     const analyses = [makeClusterAnalysis("tech", 5)];
     const tweetIds = analyses[0].representativeTweets.map(
       (t) => t.tweet.id as string,
@@ -369,7 +369,6 @@ describe("synthesize", () => {
 
     await synthesize(analyses, makeStyleStats(), makeCorpusMetadata(), backend);
 
-    expect(backend.calls[0].model).toBe("opus");
     expect(backend.calls[0].options.temperature).toBe(0.2);
   });
 

@@ -1,10 +1,6 @@
 import type { ModelIdString } from "@groa/types";
 import type { BackendType } from "@groa/config";
 
-// --- Model Tier ---
-
-export type ModelTier = "haiku" | "sonnet" | "opus";
-
 // --- LLM Request / Response ---
 
 export interface Message {
@@ -19,7 +15,6 @@ export interface RequestOptions {
 }
 
 export interface LlmRequest {
-  model: ModelTier;
   messages: Message[];
   maxTokens: number;
   options: RequestOptions;

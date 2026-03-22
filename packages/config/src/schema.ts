@@ -25,19 +25,40 @@ const ClaudeCodeSchema = z
   })
   .default(() => ({ path: "claude", maxTurns: 1, maxBudgetUsd: null }));
 
+// --- Model Tier ---
+
+export type ModelTier = "quick" | "standard" | "deep";
+
+/** Claude Code バックエンドのティア別デフォルトモデル（non-null 保証） */
+export const CLAUDE_CODE_TIER_DEFAULTS: Record<ModelTier, string> = {
+  quick: "haiku",
+  standard: "sonnet",
+  deep: "opus",
+};
+
+/** 全バックエンドのティア別デフォルトモデル */
+export const BACKEND_TIER_DEFAULTS: Record<
+  BackendType,
+  Record<ModelTier, string | null>
+> = {
+  "claude-code": CLAUDE_CODE_TIER_DEFAULTS,
+  anthropic: { quick: null, standard: null, deep: null },
+  openrouter: { quick: null, standard: null, deep: null },
+};
+
 // --- Models ---
 
 const ModelsSchema = z
   .object({
-    haiku: z.string().nullable().default(null),
-    sonnet: z.string().nullable().default(null),
-    opus: z.string().nullable().default(null),
+    quick: z.string().nullable().default(null),
+    standard: z.string().nullable().default(null),
+    deep: z.string().nullable().default(null),
     embedding: z.string().default("multilingual-e5-small"),
   })
   .default(() => ({
-    haiku: null,
-    sonnet: null,
-    opus: null,
+    quick: null,
+    standard: null,
+    deep: null,
     embedding: "multilingual-e5-small",
   }));
 

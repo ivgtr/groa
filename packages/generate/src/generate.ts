@@ -51,7 +51,6 @@ async function generateSingle(
   );
 
   const request: LlmRequest = {
-    model: "sonnet",
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },

@@ -128,12 +128,6 @@ describe("splitIntoBatches", () => {
 });
 
 describe("buildLlmRequest", () => {
-  it("Haikuモデルが指定される", () => {
-    const tweets = [makeTweet("t1", "テスト")];
-    const request = buildLlmRequest(tweets);
-    expect(request.model).toBe("haiku");
-  });
-
   it("temperature 0.0 が指定される", () => {
     const tweets = [makeTweet("t1", "テスト")];
     const request = buildLlmRequest(tweets);
@@ -475,15 +469,6 @@ describe("classify", () => {
 
     await classify(corpus, backend, null);
     expect(backend.calls[0].options.temperature).toBe(0.0);
-  });
-
-  it("リクエストにhaiku モデルが指定される", async () => {
-    const tweets = [makeTweet("t1", "テスト")];
-    const corpus = makeCorpus(tweets);
-    const backend = createMockBackend(makeSuccessResponse);
-
-    await classify(corpus, backend, null);
-    expect(backend.calls[0].model).toBe("haiku");
   });
 
   it("デフォルトバッチサイズは50", async () => {

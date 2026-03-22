@@ -204,19 +204,6 @@ describe("generate", () => {
     vi.restoreAllMocks();
   });
 
-  it("Sonnetモデルでリクエストする", async () => {
-    const persona = makePersonaDocument();
-    const fewShots = [makeTaggedTweet("tech")];
-
-    const backend = createMockBackend(() => ({
-      content: "技術の話は楽しいよね。",
-    }));
-
-    await generate(persona, fewShots, backend, { topic: "技術" });
-
-    expect(backend.calls[0].model).toBe("sonnet");
-  });
-
   it("デフォルトtemperature 0.7を使用する", async () => {
     const persona = makePersonaDocument();
     const fewShots = [makeTaggedTweet("tech")];

@@ -11,9 +11,9 @@ describe("GroaConfigSchema", () => {
 
   it("デフォルトではモデルIDは未設定（null）", () => {
     const config = createDefaultConfig();
-    expect(config.models.haiku).toBeNull();
-    expect(config.models.sonnet).toBeNull();
-    expect(config.models.opus).toBeNull();
+    expect(config.models.quick).toBeNull();
+    expect(config.models.standard).toBeNull();
+    expect(config.models.deep).toBeNull();
     expect(config.models.embedding).toBe("multilingual-e5-small");
   });
 

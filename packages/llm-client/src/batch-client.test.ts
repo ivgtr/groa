@@ -11,7 +11,6 @@ const TEST_MODEL = "claude-haiku-4-5-20251001";
 
 function makeRequest(customId: string): BatchRequest {
   const request: LlmRequest = {
-    model: "haiku",
     messages: [
       { role: "system", content: "分類してください" },
       { role: "user", content: "テストテキスト" },

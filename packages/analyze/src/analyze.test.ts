@@ -293,7 +293,7 @@ describe("analyzeClusters", () => {
     expect(results.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("Sonnetモデル・temperature 0.0でリクエストする", async () => {
+  it("temperature 0.0でリクエストする", async () => {
     const clusters = [makeClusterWithStats("tech", 5)];
     const tweetIds = clusters[0].cluster.tweets.map(
       (tt) => tt.tweet.id as string,
@@ -305,7 +305,6 @@ describe("analyzeClusters", () => {
 
     await analyzeClusters(clusters, backend);
 
-    expect(backend.calls[0].model).toBe("sonnet");
     expect(backend.calls[0].options.temperature).toBe(0.0);
   });
 

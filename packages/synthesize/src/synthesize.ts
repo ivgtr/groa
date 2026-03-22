@@ -36,7 +36,6 @@ export async function synthesize(
   );
 
   const request: LlmRequest = {
-    model: "opus",
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },

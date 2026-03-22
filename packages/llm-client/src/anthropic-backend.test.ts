@@ -20,7 +20,6 @@ function createRequest(
   overrides: Partial<LlmRequest> = {},
 ): LlmRequest {
   return {
-    model: "sonnet",
     messages: [
       { role: "system", content: "You are a helpful assistant." },
       { role: "user", content: "Hello" },

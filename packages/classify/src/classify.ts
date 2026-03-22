@@ -68,7 +68,6 @@ export function splitIntoBatches(
 export function buildLlmRequest(tweets: Tweet[]): LlmRequest {
   const { system, user } = buildClassifyPrompt(tweets);
   return {
-    model: "haiku",
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },

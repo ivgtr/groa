@@ -7,7 +7,7 @@ describe("resolveStepConfig", () => {
   describe("anthropic バックエンド", () => {
     it("環境変数 ANTHROPIC_API_KEY をフォールバックとして使用する", () => {
       const config = GroaConfigSchema.parse({
-        models: { haiku: "test-haiku" },
+        models: { quick: "test-haiku" },
       });
       const resolved = resolveStepConfig(config, "classify", {
         ANTHROPIC_API_KEY: "sk-env-key",
@@ -19,7 +19,7 @@ describe("resolveStepConfig", () => {
     it("グローバル apiKeys.anthropic が環境変数より優先される", () => {
       const config = GroaConfigSchema.parse({
         apiKeys: { anthropic: "sk-global" },
-        models: { haiku: "test-haiku" },
+        models: { quick: "test-haiku" },
       });
       const resolved = resolveStepConfig(config, "classify", {
         ANTHROPIC_API_KEY: "sk-env",
@@ -30,7 +30,7 @@ describe("resolveStepConfig", () => {
     it("工程別 apiKey が最優先される", () => {
       const config = GroaConfigSchema.parse({
         apiKeys: { anthropic: "sk-global" },
-        models: { haiku: "test-haiku" },
+        models: { quick: "test-haiku" },
         steps: { classify: { apiKey: "sk-step" } },
       });
       const resolved = resolveStepConfig(config, "classify", {
@@ -42,7 +42,7 @@ describe("resolveStepConfig", () => {
     it("環境変数参照 ${VAR} を展開する", () => {
       const config = GroaConfigSchema.parse({
         apiKeys: { anthropic: "${MY_API_KEY}" },
-        models: { haiku: "test-haiku" },
+        models: { quick: "test-haiku" },
       });
       const resolved = resolveStepConfig(config, "classify", {
         MY_API_KEY: "sk-from-env",
@@ -52,7 +52,7 @@ describe("resolveStepConfig", () => {
 
     it("APIキーがどこにも設定されていない場合 null を返す", () => {
       const config = GroaConfigSchema.parse({
-        models: { haiku: "test-haiku" },
+        models: { quick: "test-haiku" },
       });
       const resolved = resolveStepConfig(config, "classify", {});
       expect(resolved.apiKey).toBeNull();
@@ -60,25 +60,25 @@ describe("resolveStepConfig", () => {
   });
 
   describe("モデル解決", () => {
-    it("classify には haiku ティアが適用される", () => {
+    it("classify には quick ティアが適用される", () => {
       const config = GroaConfigSchema.parse({
-        models: { haiku: "claude-haiku-4-5-20251001", sonnet: "claude-sonnet-4-6-20250227", opus: "claude-opus-4-6-20250313" },
+        models: { quick: "claude-haiku-4-5-20251001", standard: "claude-sonnet-4-6-20250227", deep: "claude-opus-4-6-20250313" },
       });
       const resolved = resolveStepConfig(config, "classify", {});
       expect(resolved.model).toBe("claude-haiku-4-5-20251001");
     });
 
-    it("analyze には sonnet ティアが適用される", () => {
+    it("analyze には standard ティアが適用される", () => {
       const config = GroaConfigSchema.parse({
-        models: { haiku: "claude-haiku-4-5-20251001", sonnet: "claude-sonnet-4-6-20250227", opus: "claude-opus-4-6-20250313" },
+        models: { quick: "claude-haiku-4-5-20251001", standard: "claude-sonnet-4-6-20250227", deep: "claude-opus-4-6-20250313" },
       });
       const resolved = resolveStepConfig(config, "analyze", {});
       expect(resolved.model).toBe("claude-sonnet-4-6-20250227");
     });
 
-    it("synthesize には opus ティアが適用される", () => {
+    it("synthesize には deep ティアが適用される", () => {
       const config = GroaConfigSchema.parse({
-        models: { haiku: "claude-haiku-4-5-20251001", sonnet: "claude-sonnet-4-6-20250227", opus: "claude-opus-4-6-20250313" },
+        models: { quick: "claude-haiku-4-5-20251001", standard: "claude-sonnet-4-6-20250227", deep: "claude-opus-4-6-20250313" },
       });
       const resolved = resolveStepConfig(config, "synthesize", {});
       expect(resolved.model).toBe("claude-opus-4-6-20250313");
@@ -86,16 +86,16 @@ describe("resolveStepConfig", () => {
 
     it("工程別モデル指定が最優先される", () => {
       const config = GroaConfigSchema.parse({
-        models: { haiku: "claude-haiku-4-5-20251001", sonnet: "claude-sonnet-4-6-20250227", opus: "claude-opus-4-6-20250313" },
+        models: { quick: "claude-haiku-4-5-20251001", standard: "claude-sonnet-4-6-20250227", deep: "claude-opus-4-6-20250313" },
         steps: { classify: { model: "custom-model" } },
       });
       const resolved = resolveStepConfig(config, "classify", {});
       expect(resolved.model).toBe("custom-model");
     });
 
-    it("ティアなし工程は sonnet にフォールバックする", () => {
+    it("ティアなし工程は standard にフォールバックする", () => {
       const config = GroaConfigSchema.parse({
-        models: { haiku: "claude-haiku-4-5-20251001", sonnet: "claude-sonnet-4-6-20250227", opus: "claude-opus-4-6-20250313" },
+        models: { quick: "claude-haiku-4-5-20251001", standard: "claude-sonnet-4-6-20250227", deep: "claude-opus-4-6-20250313" },
       });
       const resolved = resolveStepConfig(config, "preprocess", {});
       expect(resolved.model).toBe("claude-sonnet-4-6-20250227");
@@ -110,7 +110,7 @@ describe("resolveStepConfig", () => {
       );
     });
 
-    it("ティアなし工程で sonnet が null の場合にエラーを throw する", () => {
+    it("ティアなし工程で standard が null の場合にエラーを throw する", () => {
       const config = createDefaultConfig();
       expect(() => resolveStepConfig(config, "preprocess", {})).toThrow(
         "モデルが設定されていません",
@@ -122,7 +122,7 @@ describe("resolveStepConfig", () => {
     it("apiKey は常に null になる", () => {
       const config = GroaConfigSchema.parse({
         backend: "claude-code",
-        models: { haiku: "test-haiku" },
+        models: { quick: "test-haiku" },
       });
       const resolved = resolveStepConfig(config, "classify", {
         ANTHROPIC_API_KEY: "sk-env",
@@ -140,13 +140,13 @@ describe("resolveStepConfig", () => {
       expect(resolved.model).toBe("custom-model");
     });
 
-    it("models.{tier} が null の場合、ティア名をフォールバックとして返す", () => {
+    it("models.{tier} が null の場合、デフォルトモデル名をフォールバックとして返す", () => {
       const config = GroaConfigSchema.parse({ backend: "claude-code" });
       const resolved = resolveStepConfig(config, "classify", {});
       expect(resolved.model).toBe("haiku");
     });
 
-    it("ティアなし工程で models.sonnet が null の場合、'sonnet' にフォールバック", () => {
+    it("ティアなし工程で models.standard が null の場合、'sonnet' にフォールバック", () => {
       const config = GroaConfigSchema.parse({ backend: "claude-code" });
       const resolved = resolveStepConfig(config, "preprocess", {});
       expect(resolved.model).toBe("sonnet");
@@ -155,7 +155,7 @@ describe("resolveStepConfig", () => {
     it("models.{tier} が設定済みならその値を使用する", () => {
       const config = GroaConfigSchema.parse({
         backend: "claude-code",
-        models: { opus: "claude-opus-4-6-20250313" },
+        models: { deep: "claude-opus-4-6-20250313" },
       });
       const resolved = resolveStepConfig(config, "synthesize", {});
       expect(resolved.model).toBe("claude-opus-4-6-20250313");
@@ -165,7 +165,7 @@ describe("resolveStepConfig", () => {
   describe("params 抽出", () => {
     it("model/apiKey を除いたパラメータが params に入る", () => {
       const config = GroaConfigSchema.parse({
-        models: { haiku: "test-haiku" },
+        models: { quick: "test-haiku" },
         steps: { classify: { batchSize: 100 } },
       });
       const resolved = resolveStepConfig(config, "classify", {});

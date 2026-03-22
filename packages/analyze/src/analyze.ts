@@ -51,7 +51,6 @@ export async function analyzeCluster(
   const { system, user } = buildAnalyzePrompt(clusterWithStats);
 
   const request: LlmRequest = {
-    model: "sonnet",
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },

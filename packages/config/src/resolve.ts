@@ -1,5 +1,6 @@
 import { ModelIdString } from "@groa/types";
-import type { GroaConfig, BackendType } from "./schema.js";
+import type { GroaConfig, BackendType, ModelTier } from "./schema.js";
+import { CLAUDE_CODE_TIER_DEFAULTS } from "./schema.js";
 
 /** 各工程が受け取る解決済み設定 */
 export interface ResolvedStepConfig {
@@ -10,12 +11,12 @@ export interface ResolvedStepConfig {
 }
 
 /** モデルティアと工程の対応 */
-const STEP_MODEL_TIER: Record<string, "haiku" | "sonnet" | "opus"> = {
-  classify: "haiku",
-  analyze: "sonnet",
-  synthesize: "opus",
-  generate: "sonnet",
-  evaluate: "sonnet",
+const STEP_MODEL_TIER: Record<string, ModelTier> = {
+  classify: "quick",
+  analyze: "standard",
+  synthesize: "deep",
+  generate: "standard",
+  evaluate: "standard",
 };
 
 /**
@@ -56,7 +57,7 @@ export function resolveStepConfig(
 
   // claude-code バックエンド
   const model = tryResolveModel(config, stepConfig, tier)
-    ?? ModelIdString(tier ?? "sonnet");
+    ?? ModelIdString(CLAUDE_CODE_TIER_DEFAULTS[tier ?? "standard"]);
   return { backend: "claude-code", apiKey: null, model, params };
 }
 
@@ -92,7 +93,7 @@ function resolveApiKey(
 function tryResolveModel(
   config: GroaConfig,
   stepConfig: Record<string, unknown> | undefined,
-  tier: "haiku" | "sonnet" | "opus" | undefined,
+  tier: ModelTier | undefined,
 ): ModelIdString | null {
   // 1. 工程別指定
   const stepModel = stepConfig?.["model"];
@@ -105,7 +106,7 @@ function tryResolveModel(
   }
 
   // 3. フォールバック（ティアなしの工程: preprocess, stats, retrieve 等）
-  return config.models.sonnet ? ModelIdString(config.models.sonnet) : null;
+  return config.models.standard ? ModelIdString(config.models.standard) : null;
 }
 
 /**
@@ -115,13 +116,13 @@ function tryResolveModel(
 function resolveModel(
   config: GroaConfig,
   stepConfig: Record<string, unknown> | undefined,
-  tier: "haiku" | "sonnet" | "opus" | undefined,
+  tier: ModelTier | undefined,
   stepName: string,
 ): ModelIdString {
   const model = tryResolveModel(config, stepConfig, tier);
   if (model) return model;
 
-  const tierHint = tier ?? "sonnet";
+  const tierHint = tier ?? "standard";
   throw new Error(
     `モデルが設定されていません (step: ${stepName}, tier: ${tierHint})。` +
       `groa config set models.${tierHint} <model-id> を実行してください。`,
