@@ -70,9 +70,26 @@ groa init --backend claude-code
 groa build <tweets.json>
 ```
 
+groa 形式でない外部JSONファイル（Twint / snscrape 等のスクレイパー出力）は自動検知して変換されます。明示的にフォーマットを指定することもできます:
+
+```bash
+# プリセット指定
+groa build tweets.json --format twint
+
+# カスタムキーマッピング
+groa build tweets.json --map-text body --map-timestamp posted_at --map-id tweet_id
+```
+
 オプション:
 - `--force` — キャッシュを無視して再実行
 - `--no-cost-limit` — コスト上限を無効化
+- `--format <name>` — 入力フォーマットを指定（`twint`）
+- `--map-id <key>` — id フィールドのソースキー
+- `--map-text <key>` — text フィールドのソースキー
+- `--map-timestamp <key>` — timestamp フィールドのソースキー
+- `--map-retweet <key>` — isRetweet フィールドのソースキー
+- `--map-media <key>` — hasMedia フィールドのソースキー
+- `--map-reply <key>` — replyTo フィールドのソースキー
 
 ### テキスト生成（generate）
 
@@ -145,20 +162,45 @@ groa config           # 現在の設定を表示
 | `hasMedia` | boolean | メディア（画像・動画）が添付されているか |
 | `replyTo` | string \| null | リプライ先のツイートID（リプライでなければ null） |
 
-### Twitter/X 公式エクスポートからの変換
+### 外部フォーマットからの変換
 
-Twitter/X の公式データエクスポートから取得した `tweets.js` を上記形式に変換する必要があります。公式エクスポートのフィールドと本ツールのフィールドの対応:
+groa 形式以外のJSONデータ（スクレイパー出力等）は、組み込みの変換機能で自動的に変換できます。
 
-| Twitter/X エクスポート | groa フィールド |
-|----------------------|---------------|
-| `tweet.id_str` | `id` |
-| `tweet.full_text` | `text` |
-| `tweet.created_at` | `timestamp`（Date.parse() でミリ秒に変換） |
-| `tweet.full_text.startsWith("RT ")` | `isRetweet` |
-| `tweet.entities.media` の有無 | `hasMedia` |
-| `tweet.in_reply_to_status_id_str` | `replyTo` |
+#### 自動検知
 
-> 変換スクリプトは本ツールのスコープ外です。
+`groa build` はアップロードされたJSONの先頭要素のキー構造を調べ、既知のフォーマット（Twint 等）を自動検知します。検知された場合は明示的な `--format` 指定なしで変換が行われます。
+
+#### Twint / snscrape 形式
+
+| Twint フィールド | groa フィールド | 変換ロジック |
+|-----------------|---------------|------------|
+| `id` | `id` | 数値 → 文字列 |
+| `tweet` | `text` | そのまま |
+| `created_at` | `timestamp` | 日時文字列パース → Unix epoch ms |
+| `retweet` | `isRetweet` | そのまま |
+| `photos` + `video` | `hasMedia` | 配列非空 or 値が truthy |
+| `reply_to` + `conversation_id` | `replyTo` | reply_to が非空なら conversation_id を返却 |
+
+#### カスタムフォーマット
+
+未知の形式の場合は `--map-*` オプションでキーマッピングを指定できます:
+
+```bash
+groa build data.json --map-id tweet_id --map-text body --map-timestamp posted_at
+```
+
+Web版では、フォーマット検知後にマッピング設定画面が表示され、ドロップダウンでキーを選択できます。
+
+#### Twitter/X 公式エクスポート
+
+Twitter/X の公式データエクスポートの `tweets.js` 形式へのプリセット対応は将来のバージョンで予定されています。現時点では `--map-*` オプションで手動マッピングが可能です:
+
+```bash
+groa build tweets.json \
+  --map-id id_str \
+  --map-text full_text \
+  --map-timestamp created_at
+```
 
 ## プライバシーと倫理に関する注意事項
 

@@ -47,6 +47,7 @@ groa/
 ├── tsconfig.json
 ├── packages/
 │   ├── types/              # 共有型定義・Zodスキーマ
+│   ├── convert/            # 外部JSON変換（フィールドマッピング・フォーマット検出）
 │   ├── preprocess/         # Step 0: テキスト前処理
 │   ├── stats/              # Step 1: 統計的文体分析（ローカル、LLM不使用）
 │   ├── classify/           # Step 2: ツイート分類・タグ付け
@@ -108,7 +109,10 @@ groa/
     analyze   → types, llm-client, stats（StyleStats参照）
     synthesize→ types, llm-client, stats（StyleStats参照）
 
+    convert   → types（外部JSON変換、LLM不使用）
+
                                pipeline → cli / web
+                               convert  → cli / web
 ```
 
 > D-10対応: stats, analyze, synthesize の依存関係を明示。analyze と synthesize は stats パッケージの StyleStats を参照するが、stats 自体は LLM を使用しないローカル処理パッケージ。
@@ -120,7 +124,7 @@ groa/
 | CLI | Node.js >= 22 | `packages/cli` |
 | Web | モダンブラウザ (ES2022+) | `packages/web` (Vite でバンドル) |
 
-CLI版とWeb版は `llm-client`, `pipeline`, `config` 以下の共通コアを共有する。環境固有のI/O（ファイルシステム / IndexedDB、サブプロセス起動）は抽象インターフェースで注入する。
+CLI版とWeb版は `llm-client`, `pipeline`, `config`, `convert` 以下の共通コアを共有する。環境固有のI/O（ファイルシステム / IndexedDB、サブプロセス起動）は抽象インターフェースで注入する。`convert` はNode.js固有APIに依存しないため、ブラウザ環境でも直接動作する。
 
 ### 1.4 pnpm workspace の管理方針
 
@@ -193,6 +197,60 @@ interface DateRange {
   end: Timestamp;
 }
 ```
+
+### 2.2.1 外部データ変換型（`packages/convert/`）
+
+> 対応する要件: spec.md §1.4
+
+外部JSON配列を `Tweet[]` に変換するための型定義。`packages/types/` の型のみに依存する。
+
+```typescript
+/** 単一フィールドの値変換関数。record 全体を受け取り、複合フィールドの導出に対応する */
+type FieldTransformer<T> = (value: unknown, record: Record<string, unknown>) => T;
+
+/** 外部JSONのキーと変換ロジックの組み合わせ */
+interface FieldMapping<T> {
+  readonly sourceKey: string;
+  readonly transform: FieldTransformer<T>;
+}
+
+/** Tweet の全フィールドに対する変換定義。各プリセットがこのインターフェースを実装する */
+interface ConverterDefinition {
+  readonly id: FieldMapping<TweetId>;
+  readonly text: FieldMapping<string>;
+  readonly timestamp: FieldMapping<Timestamp>;
+  readonly isRetweet: FieldMapping<boolean>;
+  readonly hasMedia: FieldMapping<boolean>;
+  readonly replyTo: FieldMapping<TweetId | null>;
+}
+
+/** キー名のみの簡易マッピング。デフォルト変換ロジックが適用される */
+interface SimpleFieldMapping {
+  readonly id?: string;
+  readonly text?: string;
+  readonly timestamp?: string;
+  readonly isRetweet?: string;
+  readonly hasMedia?: string;
+  readonly replyTo?: string;
+}
+
+/** 変換結果 */
+interface ConvertResult {
+  readonly tweets: Tweet[];
+  readonly totalCount: number;
+  readonly convertedCount: number;
+  readonly skippedCount: number;
+  readonly warnings: string[];
+}
+```
+
+#### 主要関数
+
+| 関数 | シグネチャ | 責務 |
+|------|----------|------|
+| `convertTweets` | `(raw: unknown[], definition: ConverterDefinition) => ConvertResult` | 外部JSON配列を変換。失敗レコードはスキップ |
+| `buildDefinition` | `(mapping: SimpleFieldMapping) => ConverterDefinition` | キー名のみの簡易マッピングから定義を構築 |
+| `detectFormat` | `(data: unknown[]) => DetectFormatResult` | 先頭要素のキーフィンガープリントでフォーマット自動検出 |
 
 ### 2.3 統計分析データ型
 
