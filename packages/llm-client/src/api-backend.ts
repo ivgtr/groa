@@ -29,11 +29,21 @@ interface AnthropicMessage {
   content: string;
 }
 
+interface CacheControl {
+  type: "ephemeral";
+}
+
+interface SystemContentBlock {
+  type: "text";
+  text: string;
+  cache_control?: CacheControl;
+}
+
 interface AnthropicRequestBody {
   model: string;
   max_tokens: number;
   messages: AnthropicMessage[];
-  system?: string;
+  system?: string | SystemContentBlock[];
   temperature?: number;
 }
 
@@ -94,7 +104,17 @@ export class ApiBackend implements LlmBackend {
     };
 
     if (systemMessage) {
-      body.system = systemMessage.content;
+      if (request.options.useCache) {
+        body.system = [
+          {
+            type: "text",
+            text: systemMessage.content,
+            cache_control: { type: "ephemeral" },
+          },
+        ];
+      } else {
+        body.system = systemMessage.content;
+      }
     }
 
     if (request.options.temperature !== undefined) {

@@ -186,4 +186,55 @@ describe("ApiBackend", () => {
     const backend = new ApiBackend(createConfig());
     expect(backend.backendType()).toBe("api");
   });
+
+  it("useCache: true で system に cache_control を設定する", async () => {
+    const fetchMock = mockFetchResponse({
+      content: [{ type: "text", text: "ok" }],
+      model: "claude-sonnet-4-6-20250227",
+      usage: { input_tokens: 10, output_tokens: 5 },
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const backend = new ApiBackend(createConfig());
+    await backend.complete(
+      createRequest({
+        options: { temperature: 0.0, useCache: true, useBatch: false },
+      }),
+    );
+
+    const callBody = JSON.parse(
+      fetchMock.mock.calls[0][1].body as string,
+    ) as Record<string, unknown>;
+
+    expect(Array.isArray(callBody.system)).toBe(true);
+    const systemBlocks = callBody.system as Array<Record<string, unknown>>;
+    expect(systemBlocks[0]).toEqual({
+      type: "text",
+      text: "You are a helpful assistant.",
+      cache_control: { type: "ephemeral" },
+    });
+  });
+
+  it("useCache: false で system を文字列で送信する", async () => {
+    const fetchMock = mockFetchResponse({
+      content: [{ type: "text", text: "ok" }],
+      model: "claude-sonnet-4-6-20250227",
+      usage: { input_tokens: 10, output_tokens: 5 },
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const backend = new ApiBackend(createConfig());
+    await backend.complete(
+      createRequest({
+        options: { temperature: 0.0, useCache: false, useBatch: false },
+      }),
+    );
+
+    const callBody = JSON.parse(
+      fetchMock.mock.calls[0][1].body as string,
+    ) as Record<string, unknown>;
+
+    expect(typeof callBody.system).toBe("string");
+    expect(callBody.system).toBe("You are a helpful assistant.");
+  });
 });
