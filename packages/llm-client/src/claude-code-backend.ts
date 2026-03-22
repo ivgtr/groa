@@ -51,21 +51,23 @@ export class ClaudeCodeBackend implements LlmBackend {
 
   async complete(request: LlmRequest): Promise<LlmResponse> {
     if (request.options.useBatch) {
-      this.warnings.push(
-        "Claude Code バックエンドは Batch API に対応していません。逐次実行にフォールバックします。",
-      );
+      const msg =
+        "Claude Code バックエンドは Batch API に対応していません。逐次実行にフォールバックします。";
+      this.warnings.push(msg);
+      console.warn(msg);
     }
 
     if (request.options.useCache) {
-      this.warnings.push(
-        "Claude Code バックエンドでは Prompt Caching を明示的に制御できません。",
-      );
+      const msg =
+        "Claude Code バックエンドでは Prompt Caching を明示的に制御できません。";
+      this.warnings.push(msg);
+      console.warn(msg);
     }
 
     if (request.options.temperature !== 0) {
-      this.warnings.push(
-        `Claude Code バックエンドでは temperature (${request.options.temperature}) を指定できません。無視されます。`,
-      );
+      const msg = `Claude Code バックエンドでは temperature (${request.options.temperature}) を指定できません。無視されます。`;
+      this.warnings.push(msg);
+      console.info(msg);
     }
 
     return withRetry(() => this.executeCommand(request), {
@@ -105,10 +107,12 @@ export class ClaudeCodeBackend implements LlmBackend {
       const data = JSON.parse(stdout) as ClaudeCodeJsonResponse;
 
       if (data.is_error) {
-        throw new Error(
+        const error = new Error(
           `Claude Code がエラーを返しました: ${data.result}。` +
             `claude コマンドの認証状態を確認してください。`,
         );
+        (error as unknown as { nonRetryable: boolean }).nonRetryable = true;
+        throw error;
       }
 
       return {
@@ -130,7 +134,7 @@ export class ClaudeCodeBackend implements LlmBackend {
             `Claude Code をインストールしてください: ` +
             `npm install -g @anthropic-ai/claude-code`,
         );
-        (nonRetryableError as { nonRetryable: boolean }).nonRetryable = true;
+        (nonRetryableError as unknown as { nonRetryable: boolean }).nonRetryable = true;
         throw nonRetryableError;
       }
       throw error;
