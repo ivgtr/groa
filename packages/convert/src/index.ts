@@ -30,3 +30,7 @@ export {
 
 // 組み込みプリセット
 export { TWINT_DEFINITION } from "./converters/twint.js";
+export { TWITTER_ARCHIVE_DEFINITION } from "./converters/twitter-archive.js";
+
+// Twitter/X エクスポート .js パーサー
+export { parseTweetsJs } from "./parse-tweets-js.js";

@@ -7,6 +7,8 @@ import {
   detectFormat,
 } from "./convert.js";
 import { TWINT_DEFINITION } from "./converters/twint.js";
+import { TWITTER_ARCHIVE_DEFINITION } from "./converters/twitter-archive.js";
+import { parseTweetsJs } from "./parse-tweets-js.js";
 import {
   toTweetId,
   toTimestamp,
@@ -439,5 +441,194 @@ describe("detectFormat", () => {
     expect(result.isNativeGroa).toBe(false);
     expect(result.formatName).toBeNull();
     expect(result.detectedKeys).toEqual([]);
+  });
+
+  it("Twitter/X アーカイブ形式を検出する", () => {
+    const data = [
+      {
+        id_str: "1318915034345451520",
+        full_text: "テスト",
+        created_at: "Wed Oct 21 14:00:23 +0000 2020",
+        entities: { hashtags: [], urls: [] },
+        retweeted: false,
+        lang: "ja",
+      },
+    ];
+    const result = detectFormat(data);
+
+    expect(result.isNativeGroa).toBe(false);
+    expect(result.formatName).toBe("twitter-archive");
+  });
+});
+
+// =============================================================================
+// TWITTER_ARCHIVE_DEFINITION
+// =============================================================================
+
+describe("TWITTER_ARCHIVE_DEFINITION", () => {
+  const ARCHIVE_SAMPLE = {
+    id_str: "1318915034345451520",
+    full_text:
+      "自分にとってはファンの人がとても大切で本当に本当に宝物みたいに思っていました。",
+    created_at: "Wed Oct 21 14:00:23 +0000 2020",
+    retweeted: false,
+    entities: {
+      hashtags: [],
+      urls: [],
+      user_mentions: [],
+    },
+    in_reply_to_status_id_str: null,
+    lang: "ja",
+    display_text_range: [0, 42],
+    favorite_count: "26788",
+    retweet_count: "6747",
+  };
+
+  const ARCHIVE_RT_SAMPLE = {
+    ...ARCHIVE_SAMPLE,
+    id_str: "1317787083759517697",
+    full_text:
+      "RT @honmahimawari: これはリツイートされたツイートです。",
+    retweeted: false,
+  };
+
+  const ARCHIVE_MEDIA_SAMPLE = {
+    ...ARCHIVE_SAMPLE,
+    id_str: "1318912752413364224",
+    entities: {
+      hashtags: [],
+      urls: [],
+      user_mentions: [],
+      media: [
+        {
+          media_url: "https://pbs.twimg.com/media/Ek24J_4VkAAgYrg.jpg",
+          type: "photo",
+        },
+      ],
+    },
+  };
+
+  const ARCHIVE_REPLY_SAMPLE = {
+    ...ARCHIVE_SAMPLE,
+    id_str: "1317787083759517698",
+    full_text: "@honmahimawari 久しぶり！",
+    in_reply_to_status_id_str: "1317768711508389890",
+  };
+
+  it("通常ツイートを正しく変換する", () => {
+    const result = convertTweets([ARCHIVE_SAMPLE], TWITTER_ARCHIVE_DEFINITION);
+
+    expect(result.convertedCount).toBe(1);
+    expect(result.skippedCount).toBe(0);
+
+    const tweet = result.tweets[0];
+    expect(tweet.id).toBe("1318915034345451520");
+    expect(tweet.text).toBe(
+      "自分にとってはファンの人がとても大切で本当に本当に宝物みたいに思っていました。",
+    );
+    expect(tweet.timestamp).toBe(Date.UTC(2020, 9, 21, 14, 0, 23));
+    expect(tweet.isRetweet).toBe(false);
+    expect(tweet.hasMedia).toBe(false);
+    expect(tweet.replyTo).toBeNull();
+  });
+
+  it("リツイートを full_text の 'RT @' 前置で判定する", () => {
+    const result = convertTweets(
+      [ARCHIVE_RT_SAMPLE],
+      TWITTER_ARCHIVE_DEFINITION,
+    );
+
+    expect(result.tweets).toHaveLength(1);
+    expect(result.tweets[0].isRetweet).toBe(true);
+  });
+
+  it("メディア付きツイートの hasMedia を entities.media で判定する", () => {
+    const result = convertTweets(
+      [ARCHIVE_MEDIA_SAMPLE],
+      TWITTER_ARCHIVE_DEFINITION,
+    );
+
+    expect(result.tweets).toHaveLength(1);
+    expect(result.tweets[0].hasMedia).toBe(true);
+  });
+
+  it("リプライツイートの replyTo を in_reply_to_status_id_str で取得する", () => {
+    const result = convertTweets(
+      [ARCHIVE_REPLY_SAMPLE],
+      TWITTER_ARCHIVE_DEFINITION,
+    );
+
+    expect(result.tweets).toHaveLength(1);
+    expect(result.tweets[0].replyTo).toBe("1317768711508389890");
+  });
+
+  it("変換結果が TweetSchema を通過する", () => {
+    const result = convertTweets(
+      [ARCHIVE_SAMPLE, ARCHIVE_RT_SAMPLE, ARCHIVE_MEDIA_SAMPLE, ARCHIVE_REPLY_SAMPLE],
+      TWITTER_ARCHIVE_DEFINITION,
+    );
+
+    expect(result.convertedCount).toBe(4);
+    for (const tweet of result.tweets) {
+      const parsed = TweetSchema.safeParse(tweet);
+      expect(parsed.success).toBe(true);
+    }
+  });
+});
+
+// =============================================================================
+// parseTweetsJs
+// =============================================================================
+
+describe("parseTweetsJs", () => {
+  it("window.YTD.tweets.part0 プレフィックスを除去してパースする", () => {
+    const js = `window.YTD.tweets.part0 = [{"tweet":{"id_str":"1","full_text":"hello"}}]`;
+    const result = parseTweetsJs(js);
+
+    expect(result).toHaveLength(1);
+    expect((result[0] as Record<string, unknown>).id_str).toBe("1");
+    expect((result[0] as Record<string, unknown>).full_text).toBe("hello");
+  });
+
+  it("{ tweet: { ... } } ネストをアンラップする", () => {
+    const js = `window.YTD.tweets.part0 = [{"tweet":{"id_str":"1","full_text":"hello"}},{"tweet":{"id_str":"2","full_text":"world"}}]`;
+    const result = parseTweetsJs(js);
+
+    expect(result).toHaveLength(2);
+    expect((result[0] as Record<string, unknown>).id_str).toBe("1");
+    expect((result[1] as Record<string, unknown>).id_str).toBe("2");
+  });
+
+  it("part1 等の異なるパート番号に対応する", () => {
+    const js = `window.YTD.tweets.part1 = [{"tweet":{"id_str":"1","full_text":"hello"}}]`;
+    const result = parseTweetsJs(js);
+
+    expect(result).toHaveLength(1);
+  });
+
+  it("ネストされていない要素はそのまま返す", () => {
+    const js = `window.YTD.tweets.part0 = [{"id_str":"1","full_text":"hello"}]`;
+    const result = parseTweetsJs(js);
+
+    expect(result).toHaveLength(1);
+    expect((result[0] as Record<string, unknown>).id_str).toBe("1");
+  });
+
+  it("UTF-8 BOM 付きファイルを正しくパースする", () => {
+    const js = `\uFEFFwindow.YTD.tweets.part0 = [{"tweet":{"id_str":"1","full_text":"hello"}}]`;
+    const result = parseTweetsJs(js);
+
+    expect(result).toHaveLength(1);
+    expect((result[0] as Record<string, unknown>).id_str).toBe("1");
+  });
+
+  it("不正なJSファイルでエラーをスローする", () => {
+    expect(() => parseTweetsJs("invalid content")).toThrow(ConversionError);
+  });
+
+  it("配列でない内容でエラーをスローする", () => {
+    expect(() => parseTweetsJs(`window.YTD.tweets.part0 = {"not":"array"}`)).toThrow(
+      ConversionError,
+    );
   });
 });

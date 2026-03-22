@@ -168,6 +168,10 @@ const FORMAT_FINGERPRINTS: {
     name: "twint",
     requiredKeys: ["tweet", "created_at", "retweet", "username"],
   },
+  {
+    name: "twitter-archive",
+    requiredKeys: ["id_str", "full_text", "created_at", "entities"],
+  },
 ];
 
 /** groa ネイティブ形式の必須キー */
