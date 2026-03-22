@@ -1,4 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Tweet } from "@groa/types";
 import { TweetId, Timestamp } from "@groa/types";
 import {
@@ -344,5 +347,87 @@ describe("preprocess", () => {
     expect(corpus.tweets.length).toBeLessThan(20);
     // ノーマライザが適用されている
     expect(corpus.tweets[0].text).toMatch(/^テスト投稿/);
+  });
+});
+
+// --- 合成データセット ---
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const FIXTURES_DIR = join(__dirname, "..", "..", "..", "test", "fixtures");
+
+interface RawTweet {
+  id: string;
+  text: string;
+  timestamp: number;
+  isRetweet: boolean;
+  hasMedia: boolean;
+  replyTo: string | null;
+}
+
+function loadSyntheticTweets(): Tweet[] {
+  const raw = readFileSync(
+    join(FIXTURES_DIR, "synthetic-tweets.json"),
+    "utf-8",
+  );
+  const data = JSON.parse(raw) as RawTweet[];
+  return data.map((t) => ({
+    id: TweetId(t.id),
+    text: t.text,
+    timestamp: Timestamp(t.timestamp),
+    isRetweet: t.isRetweet,
+    hasMedia: t.hasMedia,
+    replyTo: t.replyTo != null ? TweetId(t.replyTo) : null,
+  }));
+}
+
+describe("合成データセット", () => {
+  it("100件の合成ツイートを前処理できる", () => {
+    const tweets = loadSyntheticTweets();
+    const corpus = preprocess(tweets);
+
+    // リツイート・URLのみ・短すぎるツイートがフィルタされる
+    expect(corpus.tweets.length).toBeLessThan(100);
+    expect(corpus.tweets.length).toBeGreaterThan(0);
+    expect(corpus.metadata.totalCount).toBe(100);
+    expect(corpus.metadata.filteredCount).toBeGreaterThan(0);
+  });
+
+  it("URLのみのツイート (tweet-006) がフィルタされる", () => {
+    const tweets = loadSyntheticTweets();
+    const corpus = preprocess(tweets);
+
+    const ids = corpus.tweets.map((t) => t.id as string);
+    expect(ids).not.toContain("tweet-006");
+  });
+
+  it("短すぎるツイート (tweet-007: 確かに) がフィルタされる", () => {
+    const tweets = loadSyntheticTweets();
+    const corpus = preprocess(tweets);
+
+    const ids = corpus.tweets.map((t) => t.id as string);
+    expect(ids).not.toContain("tweet-007");
+  });
+
+  it("リツイート (tweet-008) がフィルタされる", () => {
+    const tweets = loadSyntheticTweets();
+    const tweet008 = tweets.find((t) => (t.id as string) === "tweet-008");
+    // tweet-008 が isRetweet: true であることを確認
+    expect(tweet008?.isRetweet).toBe(true);
+
+    const corpus = preprocess(tweets);
+    const ids = corpus.tweets.map((t) => t.id as string);
+    expect(ids).not.toContain("tweet-008");
+  });
+
+  it("正常なツイートのテキストが正規化されている", () => {
+    const tweets = loadSyntheticTweets();
+    const corpus = preprocess(tweets);
+
+    // tweet-001 は正常なツイートなので残っているはず
+    const tweet001 = corpus.tweets.find(
+      (t) => (t.id as string) === "tweet-001",
+    );
+    expect(tweet001).toBeDefined();
+    expect(tweet001!.text.length).toBeGreaterThan(0);
   });
 });

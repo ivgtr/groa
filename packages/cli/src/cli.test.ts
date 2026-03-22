@@ -1,10 +1,17 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtemp, rm, readFile } from "node:fs/promises";
+import { mkdtemp, rm, readFile, mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createProgram } from "./index.js";
 import { runInit } from "./commands/init.js";
 import { loadConfig } from "./commands/config.js";
+import { runInspect } from "./commands/inspect.js";
+import { runCost, collectCostSummary } from "./commands/cost.js";
+import { runClean } from "./commands/clean.js";
+import { assertFileExists, readJsonFile } from "./commands/validate.js";
+import { hasConsent, saveConsent, ensureConsent } from "./commands/consent.js";
+import { StepCacheManager } from "@groa/pipeline";
+import { Timestamp, ModelIdString } from "@groa/types";
 
 let testDir: string;
 
@@ -37,6 +44,24 @@ describe("createProgram", () => {
     const program = createProgram();
     const commands = program.commands.map((c) => c.name());
     expect(commands).toContain("config");
+  });
+
+  it("inspect サブコマンドが登録されている", () => {
+    const program = createProgram();
+    const commands = program.commands.map((c) => c.name());
+    expect(commands).toContain("inspect");
+  });
+
+  it("cost サブコマンドが登録されている", () => {
+    const program = createProgram();
+    const commands = program.commands.map((c) => c.name());
+    expect(commands).toContain("cost");
+  });
+
+  it("clean サブコマンドが登録されている", () => {
+    const program = createProgram();
+    const commands = program.commands.map((c) => c.name());
+    expect(commands).toContain("clean");
   });
 
   it("--backend オプションが定義されている", () => {
@@ -112,9 +137,217 @@ describe("groa config", () => {
   });
 
   it("不正なJSONの場合はエラーを投げる", async () => {
-    const { writeFile: wf } = await import("node:fs/promises");
-    await wf(join(testDir, "groa.json"), "{ invalid json", "utf-8");
+    await writeFile(join(testDir, "groa.json"), "{ invalid json", "utf-8");
 
     await expect(loadConfig(testDir)).rejects.toThrow("JSON形式が不正です");
+  });
+});
+
+// --- groa inspect ---
+
+describe("groa inspect", () => {
+  it("PersonaDocument の内容をJSON文字列で返す", async () => {
+    const cacheDir = join(testDir, ".groa");
+    const cacheManager = new StepCacheManager(cacheDir);
+    const persona = { body: "テストペルソナ", version: "1.0" };
+    await cacheManager.write("synthesize", "hash123", persona);
+
+    const result = await runInspect(testDir);
+    const parsed = JSON.parse(result) as Record<string, unknown>;
+    expect(parsed.body).toBe("テストペルソナ");
+    expect(parsed.version).toBe("1.0");
+  });
+
+  it("PersonaDocument が存在しない場合はアクション付きエラーを投げる", async () => {
+    await expect(runInspect(testDir)).rejects.toThrow(
+      "PersonaDocument が見つかりません",
+    );
+    await expect(runInspect(testDir)).rejects.toThrow("groa build");
+  });
+});
+
+// --- groa cost ---
+
+describe("groa cost", () => {
+  it("キャッシュされたステップのコストを合計表示する", async () => {
+    const cacheDir = join(testDir, ".groa");
+    const cacheManager = new StepCacheManager(cacheDir);
+
+    await cacheManager.write("classify", "h1", {}, {
+      inputTokens: 100,
+      outputTokens: 50,
+      cachedTokens: 0,
+      model: ModelIdString("claude-haiku-4-5-20251001"),
+      estimatedUsd: 0.17,
+    });
+    await cacheManager.write("analyze", "h2", {}, {
+      inputTokens: 200,
+      outputTokens: 100,
+      cachedTokens: 0,
+      model: ModelIdString("claude-sonnet-4-6-20250227"),
+      estimatedUsd: 1.5,
+    });
+
+    const result = await runCost(testDir);
+    expect(result).toContain("classify");
+    expect(result).toContain("analyze");
+    expect(result).toContain("合計");
+  });
+
+  it("collectCostSummary で正確なコスト合計を取得できる", async () => {
+    const cacheDir = join(testDir, ".groa");
+    const cacheManager = new StepCacheManager(cacheDir);
+
+    await cacheManager.write("classify", "h1", {}, {
+      inputTokens: 100,
+      outputTokens: 50,
+      cachedTokens: 0,
+      model: ModelIdString("claude-haiku-4-5-20251001"),
+      estimatedUsd: 0.17,
+    });
+    await cacheManager.write("stats", "h2", {}, null);
+
+    const steps = await cacheManager.listCachedSteps();
+    const summary = await collectCostSummary(cacheManager, steps);
+
+    expect(summary.totalUsd).toBeCloseTo(0.17);
+    expect(summary.steps).toHaveLength(2);
+  });
+
+  it("キャッシュが存在しない場合はアクション付きエラーを投げる", async () => {
+    await expect(runCost(testDir)).rejects.toThrow("キャッシュが見つかりません");
+    await expect(runCost(testDir)).rejects.toThrow("groa build");
+  });
+});
+
+// --- groa clean ---
+
+describe("groa clean", () => {
+  it("全キャッシュを削除する", async () => {
+    const cacheDir = join(testDir, ".groa");
+    const cacheManager = new StepCacheManager(cacheDir);
+    await cacheManager.write("classify", "h1", {});
+    await cacheManager.write("analyze", "h2", {});
+
+    const result = await runClean(undefined, testDir);
+    expect(result).toContain("2 件");
+
+    const remaining = await cacheManager.listCachedSteps();
+    expect(remaining).toHaveLength(0);
+  });
+
+  it("特定ステップ以降のキャッシュを連鎖削除する", async () => {
+    const cacheDir = join(testDir, ".groa");
+    const cacheManager = new StepCacheManager(cacheDir);
+    await cacheManager.write("preprocess", "h0", {});
+    await cacheManager.write("stats", "h1", {});
+    await cacheManager.write("classify", "h2", {});
+    await cacheManager.write("analyze", "h3", {});
+
+    const result = await runClean("stats", testDir);
+    expect(result).toContain("stats");
+
+    // stats 以降 (stats, classify, analyze) が削除される
+    const remaining = await cacheManager.listCachedSteps();
+    expect(remaining).toContain("preprocess");
+    expect(remaining).not.toContain("stats");
+    expect(remaining).not.toContain("classify");
+    expect(remaining).not.toContain("analyze");
+  });
+
+  it("存在しないステップ名でエラーを投げる", async () => {
+    await expect(runClean("nonexistent", testDir)).rejects.toThrow(
+      "キャッシュが見つかりません",
+    );
+  });
+
+  it("削除するキャッシュがない場合はメッセージを返す", async () => {
+    const result = await runClean(undefined, testDir);
+    expect(result).toContain("削除するキャッシュがありません");
+  });
+});
+
+// --- validate ---
+
+describe("validate", () => {
+  it("assertFileExists はファイルが存在すれば成功する", async () => {
+    const filePath = join(testDir, "test.txt");
+    await writeFile(filePath, "test", "utf-8");
+
+    await expect(
+      assertFileExists(filePath, "テスト"),
+    ).resolves.toBeUndefined();
+  });
+
+  it("assertFileExists はファイルが存在しない場合アクション付きエラーを投げる", async () => {
+    await expect(
+      assertFileExists(join(testDir, "missing.txt"), "`groa init` で生成してください"),
+    ).rejects.toThrow("ファイルが見つかりません");
+    await expect(
+      assertFileExists(join(testDir, "missing.txt"), "`groa init` で生成してください"),
+    ).rejects.toThrow("groa init");
+  });
+
+  it("readJsonFile は有効なJSONを読み込む", async () => {
+    const filePath = join(testDir, "data.json");
+    await writeFile(filePath, '{"key": "value"}', "utf-8");
+
+    const result = await readJsonFile(filePath, "アクション");
+    expect(result).toEqual({ key: "value" });
+  });
+
+  it("readJsonFile は不正なJSONでエラーを投げる", async () => {
+    const filePath = join(testDir, "bad.json");
+    await writeFile(filePath, "not json", "utf-8");
+
+    await expect(readJsonFile(filePath, "アクション")).rejects.toThrow(
+      "JSON形式が不正です",
+    );
+  });
+
+  it("readJsonFile はファイル不在でアクション付きエラーを投げる", async () => {
+    await expect(
+      readJsonFile(join(testDir, "missing.json"), "ファイルを確認してください"),
+    ).rejects.toThrow("ファイルが見つかりません");
+  });
+});
+
+// --- consent ---
+
+describe("consent", () => {
+  it("同意ファイルがなければ hasConsent は false を返す", async () => {
+    const cacheDir = join(testDir, ".groa");
+    expect(await hasConsent(cacheDir)).toBe(false);
+  });
+
+  it("saveConsent 後は hasConsent が true を返す", async () => {
+    const cacheDir = join(testDir, ".groa");
+    await saveConsent(cacheDir);
+    expect(await hasConsent(cacheDir)).toBe(true);
+  });
+
+  it("ensureConsent は同意済みならプロンプトを表示しない", async () => {
+    const cacheDir = join(testDir, ".groa");
+    await saveConsent(cacheDir);
+
+    const promptFn = async () => false; // 呼ばれたら false を返す
+    await ensureConsent(cacheDir, promptFn); // エラーなし
+  });
+
+  it("ensureConsent はユーザーが y を返した場合に同意を保存する", async () => {
+    const cacheDir = join(testDir, ".groa");
+    const promptFn = async () => true;
+
+    await ensureConsent(cacheDir, promptFn);
+    expect(await hasConsent(cacheDir)).toBe(true);
+  });
+
+  it("ensureConsent はユーザーが拒否した場合にエラーを投げる", async () => {
+    const cacheDir = join(testDir, ".groa");
+    const promptFn = async () => false;
+
+    await expect(ensureConsent(cacheDir, promptFn)).rejects.toThrow(
+      "データ送信への同意が必要です",
+    );
   });
 });

@@ -1,4 +1,7 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { TweetId, Timestamp } from "@groa/types";
 import type { Tweet } from "@groa/types";
 import {
@@ -440,5 +443,101 @@ describe("calcReplyRate", () => {
 
   it("空配列では0を返す", () => {
     expect(calcReplyRate([])).toBe(0);
+  });
+});
+
+// --- 合成データセット ---
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const FIXTURES_DIR = join(__dirname, "..", "..", "..", "test", "fixtures");
+
+interface RawTweet {
+  id: string;
+  text: string;
+  timestamp: number;
+  isRetweet: boolean;
+  hasMedia: boolean;
+  replyTo: string | null;
+}
+
+function loadSyntheticTweets(): Tweet[] {
+  const raw = readFileSync(
+    join(FIXTURES_DIR, "synthetic-tweets.json"),
+    "utf-8",
+  );
+  const data = JSON.parse(raw) as RawTweet[];
+  return data.map((t) => ({
+    id: TweetId(t.id),
+    text: t.text,
+    timestamp: Timestamp(t.timestamp),
+    isRetweet: t.isRetweet,
+    hasMedia: t.hasMedia,
+    replyTo: t.replyTo != null ? TweetId(t.replyTo) : null,
+  }));
+}
+
+describe("合成データセット", () => {
+  it("100件のツイートで文字数分布を算出できる", () => {
+    const tweets = loadSyntheticTweets();
+    const lengths = tweets.map((t) => t.text.length);
+    const dist = calcLengthDistribution(lengths);
+
+    expect(dist.mean).toBeGreaterThan(0);
+    expect(dist.median).toBeGreaterThan(0);
+    expect(dist.stdDev).toBeGreaterThanOrEqual(0);
+  });
+
+  it("100件のツイートで文字種比率を算出できる", () => {
+    const tweets = loadSyntheticTweets();
+    const texts = tweets.map((t) => t.text);
+    const ratio = calcCharTypeRatio(texts);
+
+    expect(ratio.hiragana).toBeGreaterThan(0);
+    expect(ratio.katakana).toBeGreaterThanOrEqual(0);
+    expect(ratio.kanji).toBeGreaterThan(0);
+    const total =
+      ratio.hiragana + ratio.katakana + ratio.kanji + ratio.ascii + ratio.emoji;
+    expect(total).toBeLessThanOrEqual(1.01);
+  });
+
+  it("100件のツイートで句読点パターンを抽出できる", () => {
+    const tweets = loadSyntheticTweets();
+    const texts = tweets.map((t) => t.text);
+    const punct = extractPunctuation(texts);
+
+    expect(punct.sentenceEnders).toBeDefined();
+    const totalEnders = Object.values(punct.sentenceEnders).reduce(
+      (sum: number, v: number) => sum + v,
+      0,
+    );
+    expect(totalEnders).toBeGreaterThan(0);
+  });
+
+  it("100件のツイートで時間帯分布を算出できる", () => {
+    const tweets = loadSyntheticTweets();
+    const timestamps = tweets.map((t) => t.timestamp as number);
+    const dist = calcHourlyDistribution(timestamps);
+
+    expect(dist).toHaveLength(24);
+    const total = dist.reduce((sum, v) => sum + v, 0);
+    expect(total).toBe(100);
+  });
+
+  it("100件のツイートでリプライ率を算出できる", () => {
+    const tweets = loadSyntheticTweets();
+    const rate = calcReplyRate(tweets);
+
+    expect(rate).toBeGreaterThanOrEqual(0);
+    expect(rate).toBeLessThanOrEqual(1);
+  });
+
+  it("100件のツイートでURL/メディア共有率を算出できる", () => {
+    const tweets = loadSyntheticTweets();
+    const rate = calcSharingRate(tweets);
+
+    expect(rate.urlRate).toBeGreaterThanOrEqual(0);
+    expect(rate.urlRate).toBeLessThanOrEqual(1);
+    expect(rate.mediaRate).toBeGreaterThanOrEqual(0);
+    expect(rate.mediaRate).toBeLessThanOrEqual(1);
   });
 });
