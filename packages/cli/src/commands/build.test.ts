@@ -273,7 +273,7 @@ describe("runBuildCommand", () => {
 
     expect(mockReadJsonSource).toHaveBeenCalledWith(
       "tweets.json",
-      "ツイートデータのJSONファイルまたはURLを指定してください",
+      "ツイートデータのファイル (.json, .js) またはURLを指定してください",
     );
     expect(mockRunBuild).toHaveBeenCalledWith(
       expect.objectContaining({ backend: "api" }),

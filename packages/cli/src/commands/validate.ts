@@ -1,4 +1,5 @@
 import { access, readFile } from "node:fs/promises";
+import { parseTweetsJs } from "@groa/convert";
 
 /** ファイルの存在を確認し、存在しない場合はアクション付きエラーをスローする */
 export async function assertFileExists(
@@ -86,13 +87,33 @@ export async function fetchJsonFromUrl(
   }
 }
 
-/** ファイルパスまたはURLから自動判定してJSONを読み込む */
+/** Twitter/X エクスポートの .js ファイルを読み込み、パースして返す */
+export async function readTweetsJsFile(
+  filePath: string,
+  action: string,
+): Promise<unknown[]> {
+  let raw: string;
+  try {
+    raw = await readFile(filePath, "utf-8");
+  } catch {
+    throw new Error(
+      `ファイルが見つかりません: ${filePath}\n→ ${action}`,
+    );
+  }
+
+  return parseTweetsJs(raw);
+}
+
+/** ファイルパスまたはURLから自動判定してデータを読み込む。.js ファイルは tweets.js として処理する */
 export async function readJsonSource(
   source: string,
   action: string,
 ): Promise<unknown> {
   if (isUrl(source)) {
     return fetchJsonFromUrl(source, action);
+  }
+  if (source.endsWith(".js")) {
+    return readTweetsJsFile(source, action);
   }
   return readJsonFile(source, action);
 }

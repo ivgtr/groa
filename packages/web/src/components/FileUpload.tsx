@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { useAppStore } from "../store.ts";
-import { detectFormat } from "@groa/convert";
+import { detectFormat, parseTweetsJs } from "@groa/convert";
 
 const MIN_TWEETS = 10;
 const MAX_TWEETS = 50000;
@@ -45,22 +45,31 @@ export function FileUpload() {
 
   const processFile = useCallback(
     (file: File) => {
-      if (!file.name.endsWith(".json")) {
-        setUploadError("JSONファイル（.json）のみ対応しています。");
+      const isJs = file.name.endsWith(".js");
+      const isJson = file.name.endsWith(".json");
+      if (!isJson && !isJs) {
+        setUploadError("対応形式: .json または .js（Twitter/X エクスポート）");
         return;
       }
 
       const reader = new FileReader();
       reader.onload = () => {
         try {
-          const parsed: unknown = JSON.parse(reader.result as string);
+          let parsed: unknown;
+          if (isJs) {
+            parsed = parseTweetsJs(reader.result as string);
+          } else {
+            parsed = JSON.parse(reader.result as string);
+          }
           if (!Array.isArray(parsed)) {
-            setUploadError("JSONファイルの内容が配列ではありません。ツイートデータの配列を含むJSONファイルを選択してください。");
+            setUploadError("ファイルの内容が配列ではありません。ツイートデータの配列を含むファイルを選択してください。");
             return;
           }
           processJsonArray(parsed, setTweets, setRawData, setUploadError);
-        } catch {
-          setUploadError("JSONファイルの解析に失敗しました。有効なJSONファイルを選択してください。");
+        } catch (error) {
+          setUploadError(
+            error instanceof Error ? error.message : "ファイルの解析に失敗しました。",
+          );
         }
       };
       reader.onerror = () => {
@@ -139,21 +148,21 @@ export function FileUpload() {
           />
         </svg>
         <p className="text-sm font-medium text-gray-700">
-          ツイートデータのJSONファイルをドラッグ＆ドロップ
+          ツイートデータのファイルをドラッグ＆ドロップ
         </p>
         <p className="mt-1 text-xs text-gray-500">または</p>
         <span className="mt-2 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
           ファイルを選択
         </span>
         <p className="mt-3 text-xs text-gray-400">
-          対応形式: .json（{String(MIN_TWEETS)}〜{String(MAX_TWEETS)}件のツイート配列）
+          対応形式: .json / .js（Twitter/X エクスポート）（{String(MIN_TWEETS)}〜{String(MAX_TWEETS)}件）
         </p>
       </div>
 
       <input
         ref={fileInputRef}
         type="file"
-        accept=".json"
+        accept=".json,.js"
         onChange={handleFileSelect}
         className="hidden"
       />

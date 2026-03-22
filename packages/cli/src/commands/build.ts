@@ -9,6 +9,7 @@ import {
   convertTweets,
   buildDefinition,
   TWINT_DEFINITION,
+  TWITTER_ARCHIVE_DEFINITION,
 } from "@groa/convert";
 import type { ConverterDefinition } from "@groa/convert";
 import { loadConfig } from "./config.js";
@@ -18,13 +19,14 @@ import { ensureConsent } from "./consent.js";
 /** 組み込みプリセット名 → ConverterDefinition */
 const FORMAT_PRESETS: Record<string, ConverterDefinition> = {
   twint: TWINT_DEFINITION,
+  "twitter-archive": TWITTER_ARCHIVE_DEFINITION,
 };
 
 export function buildCommand(): Command {
   return new Command("build")
     .description("ツイートデータからプロファイルを構築する (Step 0-5)")
-    .argument("<tweets>", "ツイートデータのJSONファイルパスまたはURL")
-    .option("--format <name>", "入力フォーマットを指定する (twint)")
+    .argument("<tweets>", "ツイートデータのファイルパスまたはURL (.json, .js)")
+    .option("--format <name>", "入力フォーマットを指定する (twint, twitter-archive)")
     .option("--map-id <key>", "id フィールドのソースキー")
     .option("--map-text <key>", "text フィールドのソースキー")
     .option("--map-timestamp <key>", "timestamp フィールドのソースキー")
@@ -74,7 +76,7 @@ export async function runBuildCommand(
   // 3. Read and validate tweets JSON（必要に応じて変換）
   const rawJson = await readJsonSource(
     tweetsPath,
-    "ツイートデータのJSONファイルまたはURLを指定してください",
+    "ツイートデータのファイル (.json, .js) またはURLを指定してください",
   );
   const tweets = resolveAndValidateTweets(rawJson, options);
 

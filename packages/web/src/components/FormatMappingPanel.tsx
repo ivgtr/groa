@@ -4,6 +4,7 @@ import {
   convertTweets,
   buildDefinition,
   TWINT_DEFINITION,
+  TWITTER_ARCHIVE_DEFINITION,
 } from "@groa/convert";
 import type { ConverterDefinition } from "@groa/convert";
 
@@ -22,6 +23,7 @@ type GroaFieldKey = (typeof GROA_FIELDS)[number]["key"];
 /** 組み込みプリセット */
 const PRESETS: { name: string; label: string; definition: ConverterDefinition }[] = [
   { name: "twint", label: "Twint / snscrape", definition: TWINT_DEFINITION },
+  { name: "twitter-archive", label: "Twitter/X 公式エクスポート", definition: TWITTER_ARCHIVE_DEFINITION },
 ];
 
 export function FormatMappingPanel() {
