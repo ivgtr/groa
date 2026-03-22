@@ -5,10 +5,11 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "packageManager": "pnpm@9.15.4",
   "scripts": {
+    "groa": "node packages/cli/dist/main.js",
     "build": "tsc --build packages/*/tsconfig.json",
     "test": "vitest run",
     "lint": "eslint packages/*/src/"
