@@ -26,3 +26,13 @@ export {
 
 export { calculateCost, CostTracker } from "./cost.js";
 export type { CostRecord, PipelineCostSummary } from "./cost.js";
+
+export { maskSensitiveValues } from "./log-mask.js";
+
+export { BatchClient, BatchTimeoutError } from "./batch-client.js";
+export type {
+  BatchRequest,
+  BatchResult,
+  BatchOptions,
+  BatchStatus,
+} from "./batch-client.js";
