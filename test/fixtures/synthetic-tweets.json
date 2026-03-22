@@ -1,0 +1,802 @@
+[
+  {
+    "id": "tweet-001",
+    "text": "新しいTypeScriptのバージョン出たけど、型推論がさらに賢くなってて感動した",
+    "timestamp": 1759312800000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-002",
+    "text": "今日のランチはカレーうどんにした。寒くなってきたからあったかいものが沁みる…",
+    "timestamp": 1759399200000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-003",
+    "text": "深夜3時にコード書いてるときが一番集中できるの、絶対体に悪いよなw",
+    "timestamp": 1759485600000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-004",
+    "text": "電車で隣の人がすごい勢いでスマホゲームやってて、つい画面見ちゃった",
+    "timestamp": 1759572000000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-005",
+    "text": "Rustのライフタイム、3回目の挑戦でようやく理解できた気がする。気がするだけかもしれない",
+    "timestamp": 1759658400000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-006",
+    "text": "https://example.com/article/rust-tips",
+    "timestamp": 1759744800000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-007",
+    "text": "確かに",
+    "timestamp": 1759831200000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-008",
+    "text": "RT 機械学習の入門書、最近いいのがたくさん出てるからまとめておきたい",
+    "timestamp": 1759917600000,
+    "isRetweet": true,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-009",
+    "text": "@tanaka_dev そのライブラリ、うちのプロジェクトでも使ってますよ！安定してて良いです",
+    "timestamp": 1760004000000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-010",
+    "text": "猫が膝の上で寝てるから動けない。これはもう仕事できないってことでいいですか？",
+    "timestamp": 1760090400000,
+    "isRetweet": false,
+    "hasMedia": true,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-011",
+    "text": "AIが書いたコードをAIがレビューする時代、人間は何をすればいいんだろう",
+    "timestamp": 1760176800000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-012",
+    "text": "秋の空が高くて気持ちいい。散歩日和だ",
+    "timestamp": 1760263200000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-013",
+    "text": "プルリクのレビュー待ちが5件溜まってる。金曜の午後にこれはきつい",
+    "timestamp": 1760349600000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-014",
+    "text": "🍁紅葉見に行きたいな〜今年はどこ行こう🍁",
+    "timestamp": 1760436000000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-015",
+    "text": "それな",
+    "timestamp": 1760522400000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-016",
+    "text": "RT Docker Composeのv2、地味に便利な機能増えてるから移行おすすめ",
+    "timestamp": 1760608800000,
+    "isRetweet": true,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-017",
+    "text": "コーヒー淹れたのに飲み忘れて冷めてた。今日3回目なんだけど",
+    "timestamp": 1760695200000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-018",
+    "text": "最近のVSCodeの拡張、質が上がりすぎててもうIDEいらないレベルでは",
+    "timestamp": 1760781600000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-019",
+    "text": "https://example.com/blog/2025/frontend-trends",
+    "timestamp": 1760868000000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-020",
+    "text": "設計書を書いてる時間のほうがコード書いてる時間より長い案件、なかなかしんどい",
+    "timestamp": 1760954400000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-021",
+    "text": "おやすみなさい。明日も頑張ろう",
+    "timestamp": 1761040800000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": "tweet-020"
+  },
+  {
+    "id": "tweet-022",
+    "text": "新しいキーボード届いた！打鍵感が最高すぎる",
+    "timestamp": 1761127200000,
+    "isRetweet": false,
+    "hasMedia": true,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-023",
+    "text": "関数型プログラミング、理論は美しいけど実務で使うとチームメンバーが困惑するジレンマ",
+    "timestamp": 1761213600000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-024",
+    "text": "わかるw",
+    "timestamp": 1761300000000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": "tweet-023"
+  },
+  {
+    "id": "tweet-025",
+    "text": "RT Pythonの型ヒント、もはや書かない理由がない。mypyと組み合わせると最強",
+    "timestamp": 1761386400000,
+    "isRetweet": true,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-026",
+    "text": "@yamada_eng レビューありがとうございます！指摘箇所修正しました",
+    "timestamp": 1761472800000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-027",
+    "text": "散歩中に見つけた猫カフェが最高だった https://example.com/catcafe-review",
+    "timestamp": 1761559200000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-028",
+    "text": "技術書典の戦利品、積読が増えていく一方なんだが…",
+    "timestamp": 1761645600000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-029",
+    "text": "😂😂😂これは笑うしかない😂😂😂",
+    "timestamp": 1761732000000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-030",
+    "text": "朝5時起き生活を始めて2週間。効果は…正直よくわからない",
+    "timestamp": 1761818400000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-031",
+    "text": "GraphQLとREST、プロジェクトの規模で使い分けるのが正解だと最近思う",
+    "timestamp": 1761904800000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-032",
+    "text": "お腹空いた",
+    "timestamp": 1761991200000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-033",
+    "text": "本番環境でしか再現しないバグ、精神的ダメージがでかすぎる",
+    "timestamp": 1762077600000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-034",
+    "text": "RT WebAssemblyの実用例が増えてきて、ブラウザの可能性がどんどん広がってる",
+    "timestamp": 1762164000000,
+    "isRetweet": true,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-035",
+    "text": "今年の冬はラーメン食べ歩きしたい。おすすめの店があったら教えてください！",
+    "timestamp": 1762250400000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-036",
+    "text": "https://example.com/tech/wasm-guide-2025",
+    "timestamp": 1762336800000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-037",
+    "text": "テストカバレッジ100%を目指すのは非現実的だけど、80%は死守したいところ",
+    "timestamp": 1762423200000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-038",
+    "text": "@suzuki_pm スケジュール了解です。来週の月曜にミーティング入れますね",
+    "timestamp": 1762509600000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-039",
+    "text": "雨の日のプログラミングBGMは Lo-Fi Hip Hop に限る",
+    "timestamp": 1762596000000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-040",
+    "text": "リファクタリングしたら元のコードの半分の行数になった。最初から綺麗に書けよ…（自分への戒め）",
+    "timestamp": 1762682400000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-041",
+    "text": "✨新しいポートフォリオサイト公開しました✨ フィードバックお待ちしてます https://example.com/portfolio",
+    "timestamp": 1762768800000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-042",
+    "text": "やば",
+    "timestamp": 1762855200000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-043",
+    "text": "RT マイクロサービスの境界設計、DDDの文脈マップが役に立つ場面が多い",
+    "timestamp": 1762941600000,
+    "isRetweet": true,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-044",
+    "text": "カフェで作業してたら隣の人もエンジニアっぽくて、ターミナル開いてた。仲間意識",
+    "timestamp": 1763028000000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-045",
+    "text": "年末に向けて個人開発のアプリを仕上げたい。あと2ヶ月…いけるか？",
+    "timestamp": 1763114400000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-046",
+    "text": "紅葉の写真撮ってきた。今年は色づきが綺麗",
+    "timestamp": 1763200800000,
+    "isRetweet": false,
+    "hasMedia": true,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-047",
+    "text": "CIが通らなくて30分溶かした結果、原因はtypoだった。つらい",
+    "timestamp": 1763287200000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-048",
+    "text": "この記事めちゃくちゃ参考になった https://example.com/architecture-patterns",
+    "timestamp": 1763373600000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-049",
+    "text": "🔥今日の進捗🔥\n・API設計完了\n・DB設計完了\n・フロント着手\nいい感じ！",
+    "timestamp": 1763460000000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-050",
+    "text": "久しぶりに本屋に行ったら2時間溶けた。幸せな時間だった",
+    "timestamp": 1763546400000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-051",
+    "text": "Next.jsのApp Router、慣れるまで時間かかったけど慣れたら便利すぎる",
+    "timestamp": 1763632800000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-052",
+    "text": "鍋の季節到来！今日はキムチ鍋にします",
+    "timestamp": 1763719200000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-053",
+    "text": "コードレビューで「ここ天才ですね」ってコメントもらったけど、3ヶ月後の自分が読めるか不安w",
+    "timestamp": 1763805600000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-054",
+    "text": "RT Denoの最新アップデート、Node.js互換性がさらに向上してて実用的になってきた",
+    "timestamp": 1763892000000,
+    "isRetweet": true,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-055",
+    "text": "https://example.com/deno-update-2025",
+    "timestamp": 1763978400000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-056",
+    "text": "有給取って平日昼間のスーパー銭湯、最高すぎて毎週行きたい",
+    "timestamp": 1764064800000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-057",
+    "text": "型安全なAPIクライアント自動生成、OpenAPI Specから作るのが今のところベストプラクティスかな",
+    "timestamp": 1764151200000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-058",
+    "text": "@nakamura_design デザインカンプ確認しました！方向性いいですね。色味だけ少し調整しませんか？",
+    "timestamp": 1764237600000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-059",
+    "text": "w",
+    "timestamp": 1764324000000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-060",
+    "text": "年末の大掃除、デスク周りから始めるか…ケーブル地獄をなんとかしたい",
+    "timestamp": 1764410400000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-061",
+    "text": "Zustandのシンプルさ、もうReduxには戻れない体になってしまった",
+    "timestamp": 1764496800000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-062",
+    "text": "イルミネーション見てきた。冬って感じする",
+    "timestamp": 1764583200000,
+    "isRetweet": false,
+    "hasMedia": true,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-063",
+    "text": "RT OSSにコントリビュートしたら初めてマージされた！小さなPRだけど嬉しい",
+    "timestamp": 1764669600000,
+    "isRetweet": true,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-064",
+    "text": "来年の目標、そろそろ考え始めないと。今年の振り返りから始めるか",
+    "timestamp": 1764756000000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-065",
+    "text": "エラーハンドリング、ちゃんとやろうとすると本当に奥が深い。Result型パターンもっと広まってほしい",
+    "timestamp": 1764842400000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-066",
+    "text": "寒すぎてこたつから出られない問題、毎年恒例",
+    "timestamp": 1764928800000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-067",
+    "text": "この動画解説わかりやすすぎた https://example.com/video/db-design",
+    "timestamp": 1765015200000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-068",
+    "text": "ペアプロ、相手によってはめちゃくちゃ生産性上がるし楽しい。相手によっては…",
+    "timestamp": 1765101600000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-069",
+    "text": "それは本当にそう。完全に同意です",
+    "timestamp": 1765188000000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": "tweet-065"
+  },
+  {
+    "id": "tweet-070",
+    "text": "🎄クリスマスの予定？コード書いてます🎄",
+    "timestamp": 1765274400000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-071",
+    "text": "TailwindCSS、最初は懐疑的だったけど使ってみたら手放せなくなった",
+    "timestamp": 1765360800000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-072",
+    "text": "https://example.com/advent-calendar/day12",
+    "timestamp": 1765447200000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-073",
+    "text": "忘年会のシーズン、体力の配分が難しい",
+    "timestamp": 1765533600000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-074",
+    "text": "RT E2Eテスト、Playwrightが安定感あって好き。Cypressから乗り換えた",
+    "timestamp": 1765620000000,
+    "isRetweet": true,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-075",
+    "text": "年末年始は積読消化期間にする。宣言しておかないとやらないので",
+    "timestamp": 1765706400000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-076",
+    "text": "@kobayashi_ops 本番デプロイ完了しました。モニタリングは引き続きお願いします！",
+    "timestamp": 1765792800000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-077",
+    "text": "個人開発のモチベーション維持、SNSで進捗報告するのが一番効くかもしれない",
+    "timestamp": 1765879200000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-078",
+    "text": "寒い",
+    "timestamp": 1765965600000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-079",
+    "text": "データベースの正規化、教科書通りにやると必ずしも最適じゃないケースがある",
+    "timestamp": 1766052000000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-080",
+    "text": "今日の夕焼け綺麗すぎた",
+    "timestamp": 1766138400000,
+    "isRetweet": false,
+    "hasMedia": true,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-081",
+    "text": "RT アクセシビリティ対応、最初から考慮して設計するのが結局一番コスト低い",
+    "timestamp": 1766224800000,
+    "isRetweet": true,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-082",
+    "text": "年賀状のデザイン、CSSで組もうとしてる自分に気づいて職業病だなと思った",
+    "timestamp": 1766311200000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-083",
+    "text": "型パズルにハマって本来のタスクが進まないやつ、あるあるすぎる",
+    "timestamp": 1766397600000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-084",
+    "text": "深夜のコンビニで買うおでん、なぜあんなに美味いのか",
+    "timestamp": 1766484000000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-085",
+    "text": "来年こそブログを定期的に書く。（去年も同じこと言ってた）",
+    "timestamp": 1766570400000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-086",
+    "text": "それめっちゃわかります！自分も同じ経験しました",
+    "timestamp": 1766656800000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": "tweet-083"
+  },
+  {
+    "id": "tweet-087",
+    "text": "pnpmのワークスペース機能、モノレポ管理がめちゃくちゃ楽になる",
+    "timestamp": 1766743200000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-088",
+    "text": "🍰ケーキ買ってきた！自分へのご褒美🎉",
+    "timestamp": 1766829600000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-089",
+    "text": "今年書いたコードの量を振り返ると、結構成長したなと実感する",
+    "timestamp": 1766916000000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-090",
+    "text": "RT セキュリティ対策は後回しにすると10倍のコストがかかる。最初から組み込もう",
+    "timestamp": 1767002400000,
+    "isRetweet": true,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-091",
+    "text": "大掃除完了！デスクがピカピカになって気分いい",
+    "timestamp": 1767088800000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-092",
+    "text": "https://example.com/yearend-tech-review",
+    "timestamp": 1767175200000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-093",
+    "text": "年越しそば食べながらコード書いてる。風情があるようなないような",
+    "timestamp": 1767175200000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-094",
+    "text": "良いお年を！来年もよろしくお願いします",
+    "timestamp": 1767189600000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": "tweet-093"
+  },
+  {
+    "id": "tweet-095",
+    "text": "Vitestの速さに慣れるとJestに戻れなくなるの、みんな同じこと思ってるはず",
+    "timestamp": 1767193200000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-096",
+    "text": "眠い",
+    "timestamp": 1767196800000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-097",
+    "text": "自分のコードを半年後に読み返して「誰が書いたんだこれ」ってなるの、永遠の課題",
+    "timestamp": 1767200400000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-098",
+    "text": "エンジニアの勉強会、オフラインで集まるとやっぱり熱量が違う",
+    "timestamp": 1767204000000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-099",
+    "text": "この1年で一番学びがあったのは、完璧を目指すより動くものを出すことの大切さ",
+    "timestamp": 1767207600000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  },
+  {
+    "id": "tweet-100",
+    "text": "新年の抱負: 週1でブログ書く、OSS活動する、健康に気をつける。全部できたら自分を褒めたい",
+    "timestamp": 1767211200000,
+    "isRetweet": false,
+    "hasMedia": false,
+    "replyTo": null
+  }
+]
