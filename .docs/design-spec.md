@@ -508,7 +508,7 @@ interface EmbeddingIndex {
 ### 3.1 モデル定義
 
 ```typescript
-type ModelTier = "haiku" | "sonnet" | "opus";
+type ModelTier = "quick" | "standard" | "deep";
 
 type ModelId =
   | "claude-haiku-4-5-20251001"
@@ -517,7 +517,27 @@ type ModelId =
   | ModelIdString; // ユーザー指定の任意モデルID
 ```
 
-> B-1対応: `ModelTier` → `ModelIdString` の解決（例: `"sonnet"` → `"claude-sonnet-4-6-20250227"`）は `LlmBackend` の各実装内で行う。呼び出し側（各パイプラインステップ）は `ModelTier` のみを指定し、具体的なモデルIDを知らない。解決に使用するマッピングは `config` パッケージの `models` 設定から取得する。
+> B-1対応: `ModelTier` → `ModelIdString` の解決は `config` パッケージの `resolveStepConfig` が行う。工程名から `STEP_MODEL_TIER` 経由でティアを決定し、`config.models[tier]` で具体的なモデルIDに解決する。各 `LlmBackend` には解決済みの `ModelIdString`（`ResolvedStepConfig.model`）が渡される。パイプラインステップは `ModelTier` を直接指定しない。`ModelTier` 型は `config` パッケージで定義される。
+
+#### ティア別デフォルトモデル定数（config パッケージ）
+
+```typescript
+/** Claude Code バックエンドのティア別デフォルトモデル（non-null 保証） */
+const CLAUDE_CODE_TIER_DEFAULTS: Record<ModelTier, string> = {
+  quick: "haiku",
+  standard: "sonnet",
+  deep: "opus",
+};
+
+/** 全バックエンドのティア別デフォルトモデル */
+const BACKEND_TIER_DEFAULTS: Record<BackendType, Record<ModelTier, string | null>> = {
+  "claude-code": CLAUDE_CODE_TIER_DEFAULTS,
+  anthropic: { quick: null, standard: null, deep: null },
+  openrouter: { quick: null, standard: null, deep: null },
+};
+```
+
+`claude-code` バックエンドではモデル未設定時に `CLAUDE_CODE_TIER_DEFAULTS` からフォールバックする。`anthropic` / `openrouter` バックエンドでは `groa.json` の `models` 設定が必須。
 
 ### 3.2 LlmBackend / LlmRequest / LlmResponse インターフェース
 
@@ -532,7 +552,6 @@ interface LlmBackend {
 }
 
 interface LlmRequest {
-  model: ModelTier;
   messages: Message[];
   maxTokens: number;
   options: RequestOptions;
@@ -633,7 +652,7 @@ import { execFile } from "node:child_process";
 
 const result = await execFileAsync("claude", [
   "-p",
-  "--model", modelFlag,           // "haiku" | "sonnet" | "opus"
+  "--model", modelFlag,           // 解決済みモデルID（デフォルト: "haiku" / "sonnet" / "opus"）
   "--system-prompt", systemPrompt,
   "--output-format", "json",
   "--max-turns", "1",
@@ -1101,9 +1120,9 @@ interface PipelineCostSummary {
   },
 
   "models": {
-    "haiku": "claude-haiku-4-5-20251001",
-    "sonnet": "claude-sonnet-4-6-20250227",
-    "opus": "claude-opus-4-6-20250313",
+    "quick": "claude-haiku-4-5-20251001",
+    "standard": "claude-sonnet-4-6-20250227",
+    "deep": "claude-opus-4-6-20250313",
     "embedding": "multilingual-e5-small"
   },
 

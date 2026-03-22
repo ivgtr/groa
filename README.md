@@ -69,9 +69,9 @@ pnpm groa init --backend claude-code
 
 ```bash
 pnpm groa config set backend claude-code
-pnpm groa config set models.haiku haiku
-pnpm groa config set models.sonnet sonnet
-pnpm groa config set models.opus opus
+pnpm groa config set models.quick haiku
+pnpm groa config set models.standard sonnet
+pnpm groa config set models.deep opus
 ```
 
 > Batch API・Prompt Caching・temperature 制御は claude-code バックエンドでは利用できません。
@@ -146,13 +146,13 @@ pnpm groa config           # 現在の設定を表示
 | 工程 | モデル | 見積コスト |
 |------|--------|-----------|
 | Step 0-1: 前処理・文体分析 | なし | $0 |
-| Step 2: 分類 | Haiku (Batch) | ~$0.17 |
-| Step 3: クラスタ分析 | Sonnet | ~$1.50 |
-| Step 4: ペルソナ合成 | Opus | ~$0.50 |
+| Step 2: 分類 | quick (Batch) | ~$0.17 |
+| Step 3: クラスタ分析 | standard | ~$1.50 |
+| Step 4: ペルソナ合成 | deep | ~$0.50 |
 | Step 5: Embedding生成 | multilingual-e5-small（ローカル） | $0 |
 | **プロファイル構築合計** | | **~$2.17** |
-| Step 7: テキスト生成（1件） | Sonnet (Cache) | ~$0.009 |
-| Step 8: 品質評価（1件） | Sonnet | ~$0.01 |
+| Step 7: テキスト生成（1件） | standard (Cache) | ~$0.009 |
+| Step 8: 品質評価（1件） | standard | ~$0.01 |
 | **100件生成+評価** | | **~$1.90** |
 
 ### claude-code バックエンド（10,000件入力）
