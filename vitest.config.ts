@@ -15,6 +15,7 @@ const packages = [
   "evaluate",
   "pipeline",
   "cli",
+  "convert",
   "web",
 ] as const;
 

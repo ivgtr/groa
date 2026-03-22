@@ -71,6 +71,9 @@ importers:
       '@groa/config':
         specifier: workspace:*
         version: link:../config
+      '@groa/convert':
+        specifier: workspace:*
+        version: link:../convert
       '@groa/embed':
         specifier: workspace:*
         version: link:../embed
@@ -107,6 +110,12 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
+
+  packages/convert:
+    dependencies:
+      '@groa/types':
+        specifier: workspace:*
+        version: link:../types
 
   packages/embed:
     dependencies:
@@ -237,6 +246,9 @@ importers:
       '@groa/config':
         specifier: workspace:*
         version: link:../config
+      '@groa/convert':
+        specifier: workspace:*
+        version: link:../convert
       '@groa/types':
         specifier: workspace:*
         version: link:../types
