@@ -67,14 +67,18 @@ groa init --backend claude-code
 ツイートデータからペルソナプロファイルを構築します（Step 0-5）。
 
 ```bash
-groa build <tweets.json>
+groa build <tweets.json|tweets.js>
 ```
 
-groa 形式でない外部JSONファイル（Twint / snscrape 等のスクレイパー出力）は自動検知して変換されます。明示的にフォーマットを指定することもできます:
+groa 形式でない外部データ（Twint / snscrape 出力、Twitter/X 公式エクスポート等）は自動検知して変換されます。明示的にフォーマットを指定することもできます:
 
 ```bash
 # プリセット指定
 groa build tweets.json --format twint
+groa build tweets.js --format twitter-archive
+
+# Twitter/X 公式エクスポートの tweets.js を直接指定（自動検知）
+groa build tweets.js
 
 # カスタムキーマッピング
 groa build tweets.json --map-text body --map-timestamp posted_at --map-id tweet_id
@@ -83,7 +87,7 @@ groa build tweets.json --map-text body --map-timestamp posted_at --map-id tweet_
 オプション:
 - `--force` — キャッシュを無視して再実行
 - `--no-cost-limit` — コスト上限を無効化
-- `--format <name>` — 入力フォーマットを指定（`twint`）
+- `--format <name>` — 入力フォーマットを指定（`twint`, `twitter-archive`）
 - `--map-id <key>` — id フィールドのソースキー
 - `--map-text <key>` — text フィールドのソースキー
 - `--map-timestamp <key>` — timestamp フィールドのソースキー
@@ -191,16 +195,24 @@ groa build data.json --map-id tweet_id --map-text body --map-timestamp posted_at
 
 Web版では、フォーマット検知後にマッピング設定画面が表示され、ドロップダウンでキーを選択できます。
 
-#### Twitter/X 公式エクスポート
+#### Twitter/X 公式エクスポート（tweets.js）
 
-Twitter/X の公式データエクスポートの `tweets.js` 形式へのプリセット対応は将来のバージョンで予定されています。現時点では `--map-*` オプションで手動マッピングが可能です:
+Twitter/X の設定画面からダウンロードできるデータエクスポートの `tweets.js` ファイルを直接読み込めます。
 
 ```bash
-groa build tweets.json \
-  --map-id id_str \
-  --map-text full_text \
-  --map-timestamp created_at
+groa build tweets.js
 ```
+
+`tweets.js` は JavaScript 形式（`window.YTD.tweets.part0 = [...]`）ですが、groa が自動的にパース・変換します。`--format twitter-archive` で明示指定も可能です。
+
+| Twitter フィールド | groa フィールド | 変換ロジック |
+|-------------------|---------------|------------|
+| `id_str` | `id` | そのまま |
+| `full_text` | `text` | そのまま |
+| `created_at` | `timestamp` | RFC 2822 風日時パース → Unix epoch ms |
+| `full_text` | `isRetweet` | `"RT @"` 前置判定 |
+| `entities.media` | `hasMedia` | 配列の有無 |
+| `in_reply_to_status_id_str` | `replyTo` | null 許容 TweetId |
 
 ## プライバシーと倫理に関する注意事項
 
