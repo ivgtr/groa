@@ -32,7 +32,7 @@ export function createProgram(): Command {
   return program;
 }
 
-export { initCommand, runInit } from "./commands/init.js";
+export { initCommand, runInit, runInitInteractive } from "./commands/init.js";
 export { configCommand, loadConfig } from "./commands/config.js";
 export { buildCommand, runBuildCommand } from "./commands/build.js";
 export { stepCommand, runStepCommand } from "./commands/step.js";

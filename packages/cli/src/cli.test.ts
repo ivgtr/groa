@@ -3,7 +3,7 @@ import { mkdtemp, rm, readFile, mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createProgram } from "./index.js";
-import { runInit } from "./commands/init.js";
+import { runInit, runInitInteractive } from "./commands/init.js";
 import { loadConfig, runConfigSet } from "./commands/config.js";
 import { runInspect } from "./commands/inspect.js";
 import { runCost, collectCostSummary } from "./commands/cost.js";
@@ -146,6 +146,55 @@ describe("groa init", () => {
     const apiKeys = config.apiKeys as Record<string, string>;
     expect(apiKeys.openrouter).toBe("${OPENROUTER_API_KEY}");
     expect(config.backend).toBe("openrouter");
+  });
+});
+
+describe("groa init (interactive)", () => {
+  function mockPrompt(answers: string[]) {
+    return async (_question: string, defaultValue: string): Promise<string> => {
+      const answer = answers.shift();
+      return answer !== undefined && answer !== "" ? answer : defaultValue;
+    };
+  }
+
+  it("対話モードで claude-code を選択するとティア名がデフォルト設定される", async () => {
+    const prompt = mockPrompt(["claude-code", "", "", ""]);
+    await runInitInteractive(testDir, prompt);
+
+    const config = JSON.parse(await readFile(join(testDir, "groa.json"), "utf-8")) as Record<string, unknown>;
+    expect(config.backend).toBe("claude-code");
+    const models = config.models as Record<string, string | null>;
+    expect(models.haiku).toBe("haiku");
+    expect(models.sonnet).toBe("sonnet");
+    expect(models.opus).toBe("opus");
+  });
+
+  it("対話モードでカスタムモデルを指定できる", async () => {
+    const prompt = mockPrompt(["claude-code", "", "claude-sonnet-4-6-20250227", ""]);
+    await runInitInteractive(testDir, prompt);
+
+    const config = JSON.parse(await readFile(join(testDir, "groa.json"), "utf-8")) as Record<string, unknown>;
+    const models = config.models as Record<string, string | null>;
+    expect(models.haiku).toBe("haiku");
+    expect(models.sonnet).toBe("claude-sonnet-4-6-20250227");
+    expect(models.opus).toBe("opus");
+  });
+
+  it("対話モードで anthropic を選択した場合モデルは null のまま", async () => {
+    const prompt = mockPrompt(["anthropic", "", "", ""]);
+    await runInitInteractive(testDir, prompt);
+
+    const config = JSON.parse(await readFile(join(testDir, "groa.json"), "utf-8")) as Record<string, unknown>;
+    expect(config.backend).toBe("anthropic");
+    const models = config.models as Record<string, string | null>;
+    expect(models.haiku).toBeNull();
+    expect(models.sonnet).toBeNull();
+    expect(models.opus).toBeNull();
+  });
+
+  it("不正なバックエンド名でエラーを投げる", async () => {
+    const prompt = mockPrompt(["invalid"]);
+    await expect(runInitInteractive(testDir, prompt)).rejects.toThrow("不正なバックエンド");
   });
 });
 
