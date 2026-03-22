@@ -41,7 +41,12 @@ export { costCommand, runCost, collectCostSummary } from "./commands/cost.js";
 export type { CostSummary } from "./commands/cost.js";
 export { cleanCommand, runClean } from "./commands/clean.js";
 export { generateCommand, runGenerateCommand } from "./commands/generate.js";
-export { assertFileExists, readJsonFile } from "./commands/validate.js";
+export {
+  assertFileExists,
+  readJsonFile,
+  readJsonSource,
+  isUrl,
+} from "./commands/validate.js";
 export {
   hasConsent,
   saveConsent,

@@ -25,13 +25,13 @@ vi.mock("./config.js", () => ({
   loadConfig: (...args: unknown[]) => mockLoadConfig(...args),
 }));
 
-const mockReadJsonFile = vi.fn();
+const mockReadJsonSource = vi.fn();
 vi.mock("./validate.js", async (importOriginal) => {
   const actual =
     await importOriginal<typeof import("./validate.js")>();
   return {
     ...actual,
-    readJsonFile: (...args: unknown[]) => mockReadJsonFile(...args),
+    readJsonSource: (...args: unknown[]) => mockReadJsonSource(...args),
   };
 });
 
@@ -265,15 +265,15 @@ describe("runBuildCommand", () => {
   it("ツイートファイルを読み込み runBuild を呼び出す", async () => {
     const { runBuildCommand } = await importBuild();
     const tweets = makeTweets(10);
-    mockReadJsonFile.mockResolvedValue(tweets);
+    mockReadJsonSource.mockResolvedValue(tweets);
 
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     await runBuildCommand("tweets.json");
     logSpy.mockRestore();
 
-    expect(mockReadJsonFile).toHaveBeenCalledWith(
+    expect(mockReadJsonSource).toHaveBeenCalledWith(
       "tweets.json",
-      "ツイートデータのJSONファイルを指定してください",
+      "ツイートデータのJSONファイルまたはURLを指定してください",
     );
     expect(mockRunBuild).toHaveBeenCalledWith(
       expect.objectContaining({ backend: "api" }),
@@ -288,7 +288,7 @@ describe("runBuildCommand", () => {
   it("--backend オプションで設定を上書きする", async () => {
     const { runBuildCommand } = await importBuild();
     const tweets = makeTweets(10);
-    mockReadJsonFile.mockResolvedValue(tweets);
+    mockReadJsonSource.mockResolvedValue(tweets);
 
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     await runBuildCommand("tweets.json", { backend: "claude-code" });
@@ -304,7 +304,7 @@ describe("runBuildCommand", () => {
   it("--force オプションが runBuild に渡される", async () => {
     const { runBuildCommand } = await importBuild();
     const tweets = makeTweets(10);
-    mockReadJsonFile.mockResolvedValue(tweets);
+    mockReadJsonSource.mockResolvedValue(tweets);
 
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     await runBuildCommand("tweets.json", { force: true });
@@ -320,7 +320,7 @@ describe("runBuildCommand", () => {
   it("--no-cost-limit で costLimitUsd が null になる", async () => {
     const { runBuildCommand } = await importBuild();
     const tweets = makeTweets(10);
-    mockReadJsonFile.mockResolvedValue(tweets);
+    mockReadJsonSource.mockResolvedValue(tweets);
 
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     await runBuildCommand("tweets.json", { costLimit: false });
@@ -336,7 +336,7 @@ describe("runBuildCommand", () => {
   it("api バックエンドで ensureConsent が呼ばれる", async () => {
     const { runBuildCommand } = await importBuild();
     const tweets = makeTweets(10);
-    mockReadJsonFile.mockResolvedValue(tweets);
+    mockReadJsonSource.mockResolvedValue(tweets);
 
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     await runBuildCommand("tweets.json");
@@ -348,7 +348,7 @@ describe("runBuildCommand", () => {
   it("claude-code バックエンドでは ensureConsent が呼ばれない", async () => {
     const { runBuildCommand } = await importBuild();
     const tweets = makeTweets(10);
-    mockReadJsonFile.mockResolvedValue(tweets);
+    mockReadJsonSource.mockResolvedValue(tweets);
 
     const config = createMockConfig();
     config.backend = "claude-code";
@@ -364,7 +364,7 @@ describe("runBuildCommand", () => {
   it("Backend 情報がコンソールに表示される", async () => {
     const { runBuildCommand } = await importBuild();
     const tweets = makeTweets(10);
-    mockReadJsonFile.mockResolvedValue(tweets);
+    mockReadJsonSource.mockResolvedValue(tweets);
 
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     await runBuildCommand("tweets.json");
@@ -375,7 +375,7 @@ describe("runBuildCommand", () => {
 
   it("不正なツイートデータでエラーを投げる", async () => {
     const { runBuildCommand } = await importBuild();
-    mockReadJsonFile.mockResolvedValue({ not: "array" });
+    mockReadJsonSource.mockResolvedValue({ not: "array" });
 
     await expect(runBuildCommand("tweets.json")).rejects.toThrow(
       "配列形式である必要があります",
@@ -384,7 +384,7 @@ describe("runBuildCommand", () => {
 
   it("ツイートが少なすぎる場合はエラーを投げる", async () => {
     const { runBuildCommand } = await importBuild();
-    mockReadJsonFile.mockResolvedValue(makeTweets(5));
+    mockReadJsonSource.mockResolvedValue(makeTweets(5));
 
     await expect(runBuildCommand("tweets.json")).rejects.toThrow(
       "少なすぎます",

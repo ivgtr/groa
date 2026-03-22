@@ -5,13 +5,13 @@ import type { BackendType } from "@groa/config";
 import { runBuild } from "@groa/pipeline";
 import type { StepEvent } from "@groa/pipeline";
 import { loadConfig } from "./config.js";
-import { readJsonFile } from "./validate.js";
+import { readJsonSource } from "./validate.js";
 import { ensureConsent } from "./consent.js";
 
 export function buildCommand(): Command {
   return new Command("build")
     .description("ツイートデータからプロファイルを構築する (Step 0-5)")
-    .argument("<tweets>", "ツイートデータのJSONファイルパス")
+    .argument("<tweets>", "ツイートデータのJSONファイルパスまたはURL")
     .action(async (tweetsPath: string, _options: unknown, cmd: Command) => {
       const globalOpts = cmd.parent?.opts() ?? {};
       await runBuildCommand(tweetsPath, {
@@ -39,9 +39,9 @@ export async function runBuildCommand(
   }
 
   // 3. Read and validate tweets JSON
-  const rawJson = await readJsonFile(
+  const rawJson = await readJsonSource(
     tweetsPath,
-    "ツイートデータのJSONファイルを指定してください",
+    "ツイートデータのJSONファイルまたはURLを指定してください",
   );
   const tweets = validateTweets(rawJson);
 

@@ -40,7 +40,7 @@ import {
 import { synthesize } from "@groa/synthesize";
 import { createEmbedder, generateEmbeddings } from "@groa/embed";
 import { loadConfig } from "./config.js";
-import { readJsonFile } from "./validate.js";
+import { readJsonSource } from "./validate.js";
 import { validateTweets, createProgressDisplay } from "./build.js";
 import { ensureConsent } from "./consent.js";
 
@@ -81,7 +81,7 @@ export function stepCommand(): Command {
     )
     .argument(
       "[tweets]",
-      "ツイートデータのJSONファイルパス (preprocess時は必須)",
+      "ツイートデータのJSONファイルパスまたはURL (preprocess時は必須)",
     )
     .action(
       async (
@@ -225,9 +225,9 @@ async function runPreprocessStep(
     );
   }
 
-  const rawJson = await readJsonFile(
+  const rawJson = await readJsonSource(
     tweetsPath,
-    "ツイートデータのJSONファイルを指定してください",
+    "ツイートデータのJSONファイルまたはURLを指定してください",
   );
   const tweets = validateTweets(rawJson);
 
