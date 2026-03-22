@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .groa/
+groa.json
 
 *.env
 *.env.*
