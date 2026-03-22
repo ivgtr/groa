@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@groa/types": "workspace:*",
-    "@groa/llm-client": "workspace:*"
+    "@groa/llm-client": "workspace:*",
+    "zod": "^4.3.6"
   }
 }
