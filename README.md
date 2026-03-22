@@ -20,7 +20,14 @@ pnpm build
 
 ### バックエンド設定
 
-groa は 2つのバックエンドに対応しています。
+groa は 3つのバックエンドに対応しています。
+
+```bash
+pnpm groa init
+```
+
+対話形式でバックエンド種別とモデルを設定し、`groa.json` を生成します。
+非対話モードで実行する場合は `--backend` フラグを指定してください。
 
 #### anthropic バックエンド（推奨）
 
@@ -30,7 +37,7 @@ Anthropic Messages API を直接呼び出します。Batch API・Prompt Caching 
 pnpm groa init --backend anthropic
 ```
 
-`groa.json` が生成されます。環境変数 `ANTHROPIC_API_KEY` を設定してください。
+環境変数 `ANTHROPIC_API_KEY` を設定してください。
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-api03-...
@@ -57,6 +64,15 @@ pnpm groa init --backend claude-code
 前提条件:
 - `claude` コマンドが PATH 上に存在すること
 - Claude Code の認証が完了していること
+
+既に `groa.json` がある場合は、以下のコマンドでバックエンドを切り替えできます:
+
+```bash
+pnpm groa config set backend claude-code
+pnpm groa config set models.haiku haiku
+pnpm groa config set models.sonnet sonnet
+pnpm groa config set models.opus opus
+```
 
 > Batch API・Prompt Caching・temperature 制御は claude-code バックエンドでは利用できません。
 
