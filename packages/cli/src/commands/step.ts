@@ -123,13 +123,13 @@ export async function runStepCommand(
     config.backend = options.backend as BackendType;
   }
 
-  // 3. Ensure consent for api backend on LLM steps
+  // 3. Ensure consent on LLM steps
   const llmSteps: BuildStepId[] = [
     "classify",
     "analyze",
     "synthesize",
   ];
-  if (config.backend === "api" && llmSteps.includes(step)) {
+  if ((config.backend === "anthropic" || config.backend === "openrouter") && llmSteps.includes(step)) {
     await ensureConsent(config.cacheDir);
   }
 
@@ -357,7 +357,7 @@ async function runClassifyStep(
   const resolved = resolveStepConfig(config, "classify");
   const backend = createLlmBackend(resolved);
   const batchClient =
-    resolved.backend === "api" && resolved.apiKey
+    resolved.backend === "anthropic" && resolved.apiKey
       ? new BatchClient(resolved.apiKey, resolved.model)
       : null;
   const taggedTweets = await classify(corpus, backend, batchClient, {

@@ -83,8 +83,8 @@ export async function runBuildCommand(
   // 4. Show backend info
   console.log(`Backend: ${config.backend}`);
 
-  // 5. Ensure consent for data sending (api backend only)
-  if (config.backend === "api") {
+  // 5. Ensure consent for data sending
+  if (config.backend === "anthropic" || config.backend === "openrouter") {
     await ensureConsent(config.cacheDir);
   }
 

@@ -122,6 +122,9 @@ const MOCK_EVALUATED_TEXT: GeneratedText = {
 
 function createTestConfig(): GroaConfig {
   const config = createDefaultConfig();
+  config.models.haiku = "test-haiku";
+  config.models.sonnet = "test-sonnet";
+  config.models.opus = "test-opus";
   config.cacheDir = "/tmp/groa-test-nonexistent-" + Date.now();
   return config;
 }
@@ -135,7 +138,7 @@ const MOCK_BACKEND = {
     cachedTokens: 0,
     costUsd: 0,
   }),
-  backendType: () => "api" as const,
+  backendType: () => "anthropic" as const,
 };
 
 const MOCK_EMBEDDER = {

@@ -82,7 +82,7 @@ const MOCK_EMBEDDING_INDEX: EmbeddingIndex = {
 
 function createMockConfig() {
   return {
-    backend: "api" as "api" | "claude-code",
+    backend: "anthropic" as "anthropic" | "openrouter" | "claude-code",
     apiKeys: { anthropic: "test-key" },
     claudeCode: { path: "claude", maxTurns: 1, maxBudgetUsd: null },
     models: {
@@ -276,7 +276,7 @@ describe("runBuildCommand", () => {
       "ツイートデータのファイル (.json, .js) またはURLを指定してください",
     );
     expect(mockRunBuild).toHaveBeenCalledWith(
-      expect.objectContaining({ backend: "api" }),
+      expect.objectContaining({ backend: "anthropic" }),
       tweets,
       expect.objectContaining({
         force: false,
@@ -333,7 +333,7 @@ describe("runBuildCommand", () => {
     );
   });
 
-  it("api バックエンドで ensureConsent が呼ばれる", async () => {
+  it("anthropic バックエンドで ensureConsent が呼ばれる", async () => {
     const { runBuildCommand } = await importBuild();
     const tweets = makeTweets(10);
     mockReadJsonSource.mockResolvedValue(tweets);
@@ -369,7 +369,7 @@ describe("runBuildCommand", () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     await runBuildCommand("tweets.json");
 
-    expect(logSpy).toHaveBeenCalledWith("Backend: api");
+    expect(logSpy).toHaveBeenCalledWith("Backend: anthropic");
     logSpy.mockRestore();
   });
 

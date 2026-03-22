@@ -32,7 +32,7 @@ export function createMockBackend(
 
   return {
     calls,
-    backendType: () => "api" as const,
+    backendType: () => "anthropic" as const,
     complete: async (request: LlmRequest): Promise<LlmResponse> => {
       calls.push(request);
       const partial =
@@ -67,7 +67,7 @@ export function createErrorMockBackend(
 
   return {
     calls,
-    backendType: () => "api" as const,
+    backendType: () => "anthropic" as const,
     complete: async (request: LlmRequest): Promise<LlmResponse> => {
       calls.push(request);
       throw error;
@@ -96,7 +96,7 @@ export function createSequentialMockBackend(
 
   return {
     calls,
-    backendType: () => "api" as const,
+    backendType: () => "anthropic" as const,
     complete: async (request: LlmRequest): Promise<LlmResponse> => {
       calls.push(request);
       const response = responses[callIndex] ?? responses[responses.length - 1];

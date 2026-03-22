@@ -59,7 +59,7 @@ async function generateSingle(
     maxTokens: MAX_TOKENS,
     options: {
       temperature,
-      useCache: backend.backendType() === "api",
+      useCache: backend.backendType() === "anthropic",
       useBatch: false,
     },
   };

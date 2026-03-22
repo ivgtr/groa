@@ -24,7 +24,7 @@ export interface ClassifyOptions {
  *
  * @param corpus 前処理済みのツイートコーパス
  * @param backend LLMバックエンド
- * @param batchClient Batch APIクライアント（apiバックエンド時に指定、claude-code時はnull）
+ * @param batchClient Batch APIクライアント（anthropicバックエンド時に指定、claude-code時はnull）
  * @param options オプション
  */
 export async function classify(

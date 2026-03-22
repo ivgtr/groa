@@ -120,7 +120,7 @@ function createMockBackend(
   };
   return {
     calls,
-    backendType: () => "api" as const,
+    backendType: () => "anthropic" as const,
     complete: async (request: LlmRequest): Promise<LlmResponse> => {
       calls.push(request);
       return { ...defaultResponse, ...responseFn(request) };

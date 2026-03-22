@@ -81,7 +81,7 @@ function makePersonaDocument(voiceBankCount: number = 8): PersonaDocument {
 
 function createMockBackend(
   responseFn: (request: LlmRequest) => Partial<LlmResponse>,
-  backendTypeValue: "api" | "claude-code" = "api",
+  backendTypeValue: "anthropic" | "openrouter" | "claude-code" = "anthropic",
 ): LlmBackend & { calls: LlmRequest[] } {
   const calls: LlmRequest[] = [];
   const defaultResponse: LlmResponse = {
@@ -246,13 +246,13 @@ describe("generate", () => {
     expect(backend.calls[0].options.temperature).toBe(0.9);
   });
 
-  it("apiバックエンドではPrompt Cachingが有効", async () => {
+  it("anthropicバックエンドではPrompt Cachingが有効", async () => {
     const persona = makePersonaDocument();
     const fewShots = [makeTaggedTweet("tech")];
 
     const backend = createMockBackend(
       () => ({ content: "技術の話は楽しいよね。" }),
-      "api",
+      "anthropic",
     );
 
     await generate(persona, fewShots, backend, { topic: "技術" });

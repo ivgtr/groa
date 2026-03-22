@@ -242,7 +242,7 @@ describe("BatchClient", () => {
     ).rejects.toThrow("Batch API 作成エラー");
   });
 
-  it("api バックエンド時のみ使用される（claude-code は対象外）", () => {
+  it("anthropic バックエンド時のみ使用される（claude-code は対象外）", () => {
     // BatchClient はAPIキーとモデルIDで初期化されるため、
     // claude-code バックエンドからは呼ばれない設計
     const client = new BatchClient(TEST_API_KEY, TEST_MODEL);

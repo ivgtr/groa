@@ -169,6 +169,9 @@ const MOCK_EMBEDDING_INDEX: EmbeddingIndex = {
 
 function createTestConfig(): GroaConfig {
   const config = createDefaultConfig();
+  config.models.haiku = "test-haiku";
+  config.models.sonnet = "test-sonnet";
+  config.models.opus = "test-opus";
   config.cacheDir = "/tmp/groa-test-nonexistent-" + Date.now();
   return config;
 }
@@ -211,7 +214,7 @@ function setupAllMocks(): void {
   // llm-client
   mockCreateLlmBackend.mockReturnValue({
     complete: vi.fn().mockResolvedValue({ content: "{}", inputTokens: 0, outputTokens: 0, modelUsed: "test", cachedTokens: 0, costUsd: 0 }),
-    backendType: () => "api",
+    backendType: () => "anthropic",
   });
 }
 

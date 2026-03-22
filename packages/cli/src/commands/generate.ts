@@ -61,8 +61,8 @@ export async function runGenerateCommand(
     config.backend = options.backend as BackendType;
   }
 
-  // 3. Ensure consent (api backend)
-  if (config.backend === "api") {
+  // 3. Ensure consent
+  if (config.backend === "anthropic" || config.backend === "openrouter") {
     await ensureConsent(config.cacheDir);
   }
 

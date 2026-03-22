@@ -83,7 +83,7 @@ const MOCK_GENERATED_TEXT: GeneratedText = {
 
 function createMockConfig() {
   return {
-    backend: "api" as "api" | "claude-code",
+    backend: "anthropic" as "anthropic" | "openrouter" | "claude-code",
     apiKeys: { anthropic: "test-key" },
     claudeCode: { path: "claude", maxTurns: 1, maxBudgetUsd: null },
     models: {
@@ -192,7 +192,7 @@ describe("runGenerateCommand", () => {
     writeSpy.mockRestore();
 
     expect(mockRunGenerate).toHaveBeenCalledWith(
-      expect.objectContaining({ backend: "api" }),
+      expect.objectContaining({ backend: "anthropic" }),
       MOCK_PERSONA,
       MOCK_TAGGED_TWEETS,
       MOCK_EMBEDDING_INDEX,

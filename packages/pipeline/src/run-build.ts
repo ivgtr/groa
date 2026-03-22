@@ -162,7 +162,7 @@ export async function runBuild(
       const resolved = resolveStepConfig(config, "classify");
       const backend = createLlmBackend(resolved);
       const batchClient =
-        resolved.backend === "api" && resolved.apiKey
+        resolved.backend === "anthropic" && resolved.apiKey
           ? new BatchClient(resolved.apiKey, resolved.model)
           : null;
       return classify(corpus, backend, batchClient, {
