@@ -87,9 +87,9 @@ function createMockConfig() {
     apiKeys: { anthropic: "test-key" },
     claudeCode: { path: "claude", maxTurns: 1, maxBudgetUsd: null },
     models: {
-      haiku: "claude-haiku-4-5-20251001",
-      sonnet: "claude-sonnet-4-6-20250227",
-      opus: "claude-opus-4-6-20250313",
+      quick: "claude-haiku-4-5-20251001",
+      standard: "claude-sonnet-4-6-20250227",
+      deep: "claude-opus-4-6-20250313",
       embedding: "multilingual-e5-small",
     },
     steps: {

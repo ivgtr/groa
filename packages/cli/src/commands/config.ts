@@ -20,7 +20,7 @@ export function configCommand(): Command {
   cmd.addCommand(
     new Command("set")
       .description("設定値を更新する")
-      .argument("<key>", "設定キー (例: models.sonnet)")
+      .argument("<key>", "設定キー (例: models.standard)")
       .argument("<value>", "設定値")
       .action(async (key: string, value: string) => {
         await runConfigSet(key, value);

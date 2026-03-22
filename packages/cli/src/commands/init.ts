@@ -3,7 +3,7 @@ import select from "@inquirer/select";
 import { writeFile, access } from "node:fs/promises";
 import { createInterface } from "node:readline";
 import { join } from "node:path";
-import { createDefaultConfig, BACKENDS } from "@groa/config";
+import { createDefaultConfig, BACKENDS, BACKEND_TIER_DEFAULTS } from "@groa/config";
 import type { BackendType } from "@groa/config";
 
 const CONFIG_FILE = "groa.json";
@@ -16,9 +16,9 @@ const BACKEND_CHOICES: { name: string; value: BackendType; description: string }
 
 interface InitOptions {
   backend?: string;
-  "models.haiku"?: string;
-  "models.sonnet"?: string;
-  "models.opus"?: string;
+  "models.quick"?: string;
+  "models.standard"?: string;
+  "models.deep"?: string;
 }
 
 export function initCommand(): Command {
@@ -28,9 +28,9 @@ export function initCommand(): Command {
       "--backend <type>",
       "バックエンド種別 (anthropic | openrouter | claude-code)",
     )
-    .option("--models.haiku <id>", "haiku ティアのモデルID")
-    .option("--models.sonnet <id>", "sonnet ティアのモデルID")
-    .option("--models.opus <id>", "opus ティアのモデルID")
+    .option("--models.quick <id>", "quick ティアのモデルID")
+    .option("--models.standard <id>", "standard ティアのモデルID")
+    .option("--models.deep <id>", "deep ティアのモデルID")
     .action(async (options: InitOptions) => {
       if (!options.backend) {
         // 対話モード
@@ -38,13 +38,13 @@ export function initCommand(): Command {
       } else {
         // 非対話モード
         const modelOverrides: Partial<{
-          haiku: string;
-          sonnet: string;
-          opus: string;
+          quick: string;
+          standard: string;
+          deep: string;
         }> = {};
-        if (options["models.haiku"]) modelOverrides.haiku = options["models.haiku"];
-        if (options["models.sonnet"]) modelOverrides.sonnet = options["models.sonnet"];
-        if (options["models.opus"]) modelOverrides.opus = options["models.opus"];
+        if (options["models.quick"]) modelOverrides.quick = options["models.quick"];
+        if (options["models.standard"]) modelOverrides.standard = options["models.standard"];
+        if (options["models.deep"]) modelOverrides.deep = options["models.deep"];
         await runInit(options.backend as BackendType, process.cwd(), modelOverrides);
       }
     });
@@ -53,7 +53,7 @@ export function initCommand(): Command {
 export async function runInit(
   backend: BackendType = "anthropic",
   cwd = process.cwd(),
-  modelOverrides: Partial<{ haiku: string; sonnet: string; opus: string }> = {},
+  modelOverrides: Partial<{ quick: string; standard: string; deep: string }> = {},
 ): Promise<string> {
   const filePath = join(cwd, CONFIG_FILE);
 
@@ -76,9 +76,9 @@ export async function runInit(
   config.backend = backend;
 
   // モデルオーバーライドの適用
-  if (modelOverrides.haiku) config.models.haiku = modelOverrides.haiku;
-  if (modelOverrides.sonnet) config.models.sonnet = modelOverrides.sonnet;
-  if (modelOverrides.opus) config.models.opus = modelOverrides.opus;
+  if (modelOverrides.quick) config.models.quick = modelOverrides.quick;
+  if (modelOverrides.standard) config.models.standard = modelOverrides.standard;
+  if (modelOverrides.deep) config.models.deep = modelOverrides.deep;
 
   // APIキーは環境変数参照のプレースホルダを設定
   if (backend === "anthropic") {
@@ -109,21 +109,24 @@ export async function runInitInteractive(
   // 1. バックエンド選択（セレクト式）
   const backend = await p.selectBackend();
 
-  // 2. モデル設定（claude-code はティア名がデフォルト、他は空）
-  const defaults = backend === "claude-code"
-    ? { haiku: "haiku", sonnet: "sonnet", opus: "opus" }
-    : { haiku: "", sonnet: "", opus: "" };
+  // 2. モデル設定（BACKEND_TIER_DEFAULTS からデフォルト値を取得）
+  const tierDefaults = BACKEND_TIER_DEFAULTS[backend];
+  const defaults = {
+    quick: tierDefaults.quick ?? "",
+    standard: tierDefaults.standard ?? "",
+    deep: tierDefaults.deep ?? "",
+  };
 
   console.log("\nモデルの設定（Enter でデフォルト値を使用）:");
-  const haiku = await p.inputModel("  haiku ティア", defaults.haiku);
-  const sonnet = await p.inputModel("  sonnet ティア", defaults.sonnet);
-  const opus = await p.inputModel("  opus ティア", defaults.opus);
+  const quick = await p.inputModel("  quick ティア", defaults.quick);
+  const standard = await p.inputModel("  standard ティア", defaults.standard);
+  const deep = await p.inputModel("  deep ティア", defaults.deep);
 
   // 3. runInit に委譲
   const filePath = await runInit(backend, cwd, {
-    haiku: haiku || undefined,
-    sonnet: sonnet || undefined,
-    opus: opus || undefined,
+    quick: quick || undefined,
+    standard: standard || undefined,
+    deep: deep || undefined,
   });
 
   console.log("\n✓ groa.json を生成しました");

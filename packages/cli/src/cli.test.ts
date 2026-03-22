@@ -123,8 +123,8 @@ describe("groa init", () => {
 
   it("--models.* オプションでモデルIDを指定できる", async () => {
     await runInit("anthropic", testDir, {
-      haiku: "claude-haiku-4-5-20251001",
-      sonnet: "claude-sonnet-4-6-20250227",
+      quick: "claude-haiku-4-5-20251001",
+      standard: "claude-sonnet-4-6-20250227",
     });
     const content = await readFile(
       join(testDir, "groa.json"),
@@ -132,9 +132,9 @@ describe("groa init", () => {
     );
     const config = JSON.parse(content) as Record<string, unknown>;
     const models = config.models as Record<string, string | null>;
-    expect(models.haiku).toBe("claude-haiku-4-5-20251001");
-    expect(models.sonnet).toBe("claude-sonnet-4-6-20250227");
-    expect(models.opus).toBeNull();
+    expect(models.quick).toBe("claude-haiku-4-5-20251001");
+    expect(models.standard).toBe("claude-sonnet-4-6-20250227");
+    expect(models.deep).toBeNull();
   });
 
   it("openrouter バックエンドで APIキー環境変数プレースホルダを設定する", async () => {
@@ -171,9 +171,9 @@ describe("groa init (interactive)", () => {
     const config = JSON.parse(await readFile(join(testDir, "groa.json"), "utf-8")) as Record<string, unknown>;
     expect(config.backend).toBe("claude-code");
     const models = config.models as Record<string, string | null>;
-    expect(models.haiku).toBe("haiku");
-    expect(models.sonnet).toBe("sonnet");
-    expect(models.opus).toBe("opus");
+    expect(models.quick).toBe("haiku");
+    expect(models.standard).toBe("sonnet");
+    expect(models.deep).toBe("opus");
   });
 
   it("対話モードでカスタムモデルを指定できる", async () => {
@@ -181,9 +181,9 @@ describe("groa init (interactive)", () => {
 
     const config = JSON.parse(await readFile(join(testDir, "groa.json"), "utf-8")) as Record<string, unknown>;
     const models = config.models as Record<string, string | null>;
-    expect(models.haiku).toBe("haiku");
-    expect(models.sonnet).toBe("claude-sonnet-4-6-20250227");
-    expect(models.opus).toBe("opus");
+    expect(models.quick).toBe("haiku");
+    expect(models.standard).toBe("claude-sonnet-4-6-20250227");
+    expect(models.deep).toBe("opus");
   });
 
   it("対話モードで anthropic を選択した場合モデルは null のまま", async () => {
@@ -192,9 +192,9 @@ describe("groa init (interactive)", () => {
     const config = JSON.parse(await readFile(join(testDir, "groa.json"), "utf-8")) as Record<string, unknown>;
     expect(config.backend).toBe("anthropic");
     const models = config.models as Record<string, string | null>;
-    expect(models.haiku).toBeNull();
-    expect(models.sonnet).toBeNull();
-    expect(models.opus).toBeNull();
+    expect(models.quick).toBeNull();
+    expect(models.standard).toBeNull();
+    expect(models.deep).toBeNull();
   });
 });
 
@@ -221,20 +221,20 @@ describe("groa config", () => {
 });
 
 describe("groa config set", () => {
-  it("models.sonnet を更新できる", async () => {
+  it("models.standard を更新できる", async () => {
     await runInit("anthropic", testDir);
-    await runConfigSet("models.sonnet", "claude-sonnet-4-6-20250227", testDir);
+    await runConfigSet("models.standard", "claude-sonnet-4-6-20250227", testDir);
 
     const config = await loadConfig(testDir);
-    expect(config.models.sonnet).toBe("claude-sonnet-4-6-20250227");
+    expect(config.models.standard).toBe("claude-sonnet-4-6-20250227");
   });
 
-  it("models.haiku を更新できる", async () => {
+  it("models.quick を更新できる", async () => {
     await runInit("anthropic", testDir);
-    await runConfigSet("models.haiku", "claude-haiku-4-5-20251001", testDir);
+    await runConfigSet("models.quick", "claude-haiku-4-5-20251001", testDir);
 
     const config = await loadConfig(testDir);
-    expect(config.models.haiku).toBe("claude-haiku-4-5-20251001");
+    expect(config.models.quick).toBe("claude-haiku-4-5-20251001");
   });
 
   it("backend を更新できる", async () => {
@@ -247,7 +247,7 @@ describe("groa config set", () => {
 
   it("groa.json が存在しない場合はエラーを投げる", async () => {
     await expect(
-      runConfigSet("models.sonnet", "test", testDir),
+      runConfigSet("models.standard", "test", testDir),
     ).rejects.toThrow("groa.json が見つかりません");
   });
 
