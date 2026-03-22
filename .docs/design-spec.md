@@ -251,6 +251,27 @@ interface ConvertResult {
 | `convertTweets` | `(raw: unknown[], definition: ConverterDefinition) => ConvertResult` | 外部JSON配列を変換。失敗レコードはスキップ |
 | `buildDefinition` | `(mapping: SimpleFieldMapping) => ConverterDefinition` | キー名のみの簡易マッピングから定義を構築 |
 | `detectFormat` | `(data: unknown[]) => DetectFormatResult` | 先頭要素のキーフィンガープリントでフォーマット自動検出 |
+| `parseTweetsJs` | `(text: string) => unknown[]` | Twitter/X エクスポートの `.js` ファイル文字列をパースし、ネストをアンラップして `unknown[]` を返す |
+
+#### Twitter/X 公式エクスポート対応
+
+`parseTweetsJs` は `.js` ファイルのテキストを受け取り、以下の処理を行う:
+
+1. `window.YTD.tweets.part0 = ` プレフィックスを除去（正規表現: `/^window\.YTD\.tweets\.part\d+\s*=\s*/`）
+2. 残りを `JSON.parse` で配列としてパース
+3. 各要素が `{ tweet: { ... } }` 形式の場合、`tweet` プロパティをアンラップ
+
+`TWITTER_ARCHIVE_DEFINITION` は `ConverterDefinition` を実装する組み込みプリセット:
+
+```typescript
+/** Twitter/X 公式アーカイブの isRetweet 判定。full_text の "RT @" 前置で判定 */
+const twitterArchiveIsRetweet: FieldTransformer<boolean>;
+
+/** Twitter/X 公式アーカイブの hasMedia 判定。entities.media 配列の有無で判定 */
+const twitterArchiveHasMedia: FieldTransformer<boolean>;
+
+const TWITTER_ARCHIVE_DEFINITION: ConverterDefinition;
+```
 
 ### 2.3 統計分析データ型
 
