@@ -6,7 +6,7 @@ export {
   CostLimitExceededError,
   PipelineProgress,
 } from "./progress.js";
-export type { StepEvent, ProgressCallback } from "./progress.js";
+export type { StepEvent, StepTokenUsage, ProgressCallback } from "./progress.js";
 
 export { runBuild, BUILD_STEP_ORDER, createBackendForStep } from "./run-build.js";
 export type { BuildOptions, BuildResult, BuildStepId } from "./run-build.js";

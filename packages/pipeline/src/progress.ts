@@ -1,3 +1,9 @@
+/** ステップ単位のトークン使用量 */
+export interface StepTokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+}
+
 /** パイプラインの進捗イベント */
 export type StepEvent =
   | {
@@ -23,10 +29,13 @@ export type StepEvent =
       totalSteps: number;
       costUsd: number;
       totalCostUsd: number;
+      tokenUsage?: StepTokenUsage;
+      totalTokenUsage?: StepTokenUsage;
     }
   | {
       type: "pipeline-complete";
       totalCostUsd: number;
+      totalTokenUsage?: StepTokenUsage;
     }
   | {
       type: "cost-limit-exceeded";
@@ -92,6 +101,8 @@ export class CostLimitGuard {
 export class PipelineProgress {
   private readonly costGuard: CostLimitGuard;
   private readonly onProgress: ProgressCallback;
+  private totalInputTokens = 0;
+  private totalOutputTokens = 0;
 
   constructor(options: {
     onProgress?: ProgressCallback;
@@ -133,8 +144,15 @@ export class PipelineProgress {
     stepIndex: number,
     totalSteps: number,
     costUsd: number,
+    tokenUsage?: StepTokenUsage,
   ): void {
     this.costGuard.addCost(costUsd);
+
+    if (tokenUsage) {
+      this.totalInputTokens += tokenUsage.inputTokens;
+      this.totalOutputTokens += tokenUsage.outputTokens;
+    }
+
     const totalCostUsd = this.costGuard.getTotalCost();
 
     this.onProgress({
@@ -144,6 +162,11 @@ export class PipelineProgress {
       totalSteps,
       costUsd,
       totalCostUsd,
+      tokenUsage,
+      totalTokenUsage: {
+        inputTokens: this.totalInputTokens,
+        outputTokens: this.totalOutputTokens,
+      },
     });
 
     // コスト上限チェック（超過時は次のステップ開始前にエラー）
@@ -166,6 +189,10 @@ export class PipelineProgress {
     this.onProgress({
       type: "pipeline-complete",
       totalCostUsd: this.costGuard.getTotalCost(),
+      totalTokenUsage: {
+        inputTokens: this.totalInputTokens,
+        outputTokens: this.totalOutputTokens,
+      },
     });
   }
 

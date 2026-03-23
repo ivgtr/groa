@@ -6,7 +6,7 @@ import type {
 } from "@groa/types";
 import type { GroaConfig } from "@groa/config";
 import { resolveStepConfig } from "@groa/config";
-import { createLlmBackend } from "@groa/llm-client";
+import { createLlmBackend, TokenTrackingBackend } from "@groa/llm-client";
 import { retrieve } from "@groa/retrieve";
 import { createEmbedder } from "@groa/embed";
 import { generate } from "@groa/generate";
@@ -51,7 +51,11 @@ export async function runGenerate(
 
   // LLM バックエンドを作成（generate / evaluate で使用）
   const resolved = resolveStepConfig(config, "generate");
-  const backend = createLlmBackend(resolved);
+  const rawBackend = createLlmBackend(resolved);
+
+  // ステップごとに別インスタンスでトークンを追跡
+  const generateTracked = new TokenTrackingBackend(rawBackend, "generate");
+  const evaluateTracked = new TokenTrackingBackend(rawBackend, "evaluate");
 
   // --- Step 6: retrieve ---
   progress.stepStart("retrieve", 0, TOTAL_STEPS);
@@ -76,11 +80,15 @@ export async function runGenerate(
   const generationResult = await generate(
     persona,
     retrieveResult.forGeneration,
-    backend,
+    generateTracked,
     params,
   );
 
-  progress.stepComplete("generate", 1, TOTAL_STEPS, 0);
+  const genRecord = generateTracked.getCostRecord();
+  progress.stepComplete("generate", 1, TOTAL_STEPS, generateTracked.getDisplayCostUsd(), {
+    inputTokens: genRecord.inputTokens,
+    outputTokens: genRecord.outputTokens,
+  });
 
   // --- Step 8: evaluate ---
   progress.stepStart("evaluate", 2, TOTAL_STEPS);
@@ -94,7 +102,7 @@ export async function runGenerate(
         variant,
         retrieveResult.forEvaluation,
         persona,
-        backend,
+        evaluateTracked,
       );
       evaluatedResults.push(evaluated);
     }
@@ -104,11 +112,15 @@ export async function runGenerate(
       generationResult,
       retrieveResult.forEvaluation,
       persona,
-      backend,
+      evaluateTracked,
     );
   }
 
-  progress.stepComplete("evaluate", 2, TOTAL_STEPS, 0);
+  const evalRecord = evaluateTracked.getCostRecord();
+  progress.stepComplete("evaluate", 2, TOTAL_STEPS, evaluateTracked.getDisplayCostUsd(), {
+    inputTokens: evalRecord.inputTokens,
+    outputTokens: evalRecord.outputTokens,
+  });
 
   progress.pipelineComplete();
 

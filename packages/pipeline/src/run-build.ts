@@ -10,8 +10,8 @@ import type {
 import { Timestamp } from "@groa/types";
 import type { GroaConfig } from "@groa/config";
 import { resolveStepConfig } from "@groa/config";
-import type { LlmBackend } from "@groa/llm-client";
-import { createLlmBackend, BatchClient } from "@groa/llm-client";
+import type { LlmBackend, CostRecord } from "@groa/llm-client";
+import { createLlmBackend, BatchClient, TokenTrackingBackend } from "@groa/llm-client";
 import { preprocess } from "@groa/preprocess";
 import {
   getTokenizer,
@@ -38,7 +38,7 @@ import { synthesize } from "@groa/synthesize";
 import { createEmbedder, generateEmbeddings } from "@groa/embed";
 import { StepCacheManager } from "./cache.js";
 import { PipelineProgress } from "./progress.js";
-import type { ProgressCallback } from "./progress.js";
+import type { ProgressCallback, StepTokenUsage } from "./progress.js";
 
 /** ビルドフェーズのステップ実行順序 */
 const BUILD_STEP_ORDER = [
@@ -65,6 +65,13 @@ export interface BuildOptions {
 export interface BuildResult {
   persona: PersonaDocument;
   embeddingIndex: EmbeddingIndex;
+}
+
+/** executeStep が LLM ステップから取得するコスト・トークン情報 */
+interface LlmStepInfo {
+  costUsd: number;
+  costRecord: CostRecord;
+  tokenUsage: StepTokenUsage;
 }
 
 /**
@@ -107,7 +114,6 @@ export async function runBuild(
         boilerplatePatterns: config.steps.preprocess.boilerplatePatterns,
       });
     },
-    0,
   );
 
   // --- Step 1: stats ---
@@ -147,10 +153,15 @@ export async function runBuild(
         analyzedAt: Timestamp(Date.now()),
       };
     },
-    0,
   );
 
   // --- Step 2: classify ---
+  const classifyResolved = resolveStepConfig(config, "classify");
+  const classifyTracked = new TokenTrackingBackend(
+    createLlmBackend(classifyResolved),
+    "classify",
+  );
+
   const taggedTweets = await executeStep<TaggedTweet[]>(
     "classify",
     2,
@@ -160,20 +171,18 @@ export async function runBuild(
     () =>
       cache.computeHash({ corpus, classifyConfig: config.steps.classify }),
     async () => {
-      const resolved = resolveStepConfig(config, "classify");
-      const backend = createLlmBackend(resolved);
       const batchClient =
-        resolved.backend === "anthropic" && resolved.apiKey
-          ? new BatchClient(resolved.apiKey, resolved.model)
+        classifyResolved.backend === "anthropic" && classifyResolved.apiKey
+          ? new BatchClient(classifyResolved.apiKey, classifyResolved.model)
           : null;
       const batchSize = config.steps.classify.batchSize ?? 50;
       let warningsFlushed = false;
-      return classify(corpus, backend, batchClient, {
+      return classify(corpus, classifyTracked, batchClient, {
         batchSize,
         onProgress: (processed, total) => {
           if (!warningsFlushed) {
             warningsFlushed = true;
-            for (const w of backend.getWarnings()) {
+            for (const w of classifyTracked.getWarnings()) {
               progress.stepWarning("classify", w);
             }
           }
@@ -183,10 +192,15 @@ export async function runBuild(
         },
       });
     },
-    null,
+    () => toLlmStepInfo(classifyTracked),
   );
 
   // --- Step 3: analyze ---
+  const analyzeTracked = new TokenTrackingBackend(
+    createLlmBackend(resolveStepConfig(config, "analyze")),
+    "analyze",
+  );
+
   const analyses = await executeStep<ClusterAnalysis[]>(
     "analyze",
     3,
@@ -196,17 +210,20 @@ export async function runBuild(
     // _v: 2 — mergeClusterAnalyses 追加に伴い旧キャッシュを無効化
     () => cache.computeHash({ taggedTweets, styleStats, _v: 2 }),
     async () => {
-      const resolved = resolveStepConfig(config, "analyze");
-      const backend = createLlmBackend(resolved);
       const clusters = buildClusters(taggedTweets);
       const clustersWithStats = await computeAllClusterStats(clusters);
-      const rawAnalyses = await analyzeClusters(clustersWithStats, backend);
-      return mergeClusterAnalyses(rawAnalyses, backend);
+      const rawAnalyses = await analyzeClusters(clustersWithStats, analyzeTracked);
+      return mergeClusterAnalyses(rawAnalyses, analyzeTracked);
     },
-    null,
+    () => toLlmStepInfo(analyzeTracked),
   );
 
   // --- Step 4: synthesize ---
+  const synthesizeTracked = new TokenTrackingBackend(
+    createLlmBackend(resolveStepConfig(config, "synthesize")),
+    "synthesize",
+  );
+
   const persona = await executeStep<PersonaDocument>(
     "synthesize",
     4,
@@ -220,11 +237,9 @@ export async function runBuild(
         metadata: corpus.metadata,
       }),
     async () => {
-      const resolved = resolveStepConfig(config, "synthesize");
-      const backend = createLlmBackend(resolved);
-      return synthesize(analyses, styleStats, corpus.metadata, backend);
+      return synthesize(analyses, styleStats, corpus.metadata, synthesizeTracked);
     },
-    null,
+    () => toLlmStepInfo(synthesizeTracked),
   );
 
   // --- Step 5: embed ---
@@ -239,12 +254,26 @@ export async function runBuild(
       const embedder = await createEmbedder();
       return generateEmbeddings(corpus, embedder);
     },
-    0,
   );
 
   progress.pipelineComplete();
 
   return { persona, embeddingIndex };
+}
+
+/** TokenTrackingBackend から LlmStepInfo を生成する */
+function toLlmStepInfo(tracked: TokenTrackingBackend): LlmStepInfo {
+  const record = tracked.getCostRecord();
+  const displayCost = tracked.getDisplayCostUsd();
+  return {
+    costUsd: displayCost,
+    // キャッシュにもプロバイダー報告コストを保存し、キャッシュヒット時の表示を一貫させる
+    costRecord: { ...record, estimatedUsd: displayCost },
+    tokenUsage: {
+      inputTokens: record.inputTokens,
+      outputTokens: record.outputTokens,
+    },
+  };
 }
 
 /**
@@ -257,7 +286,7 @@ export async function runBuild(
  * @param force キャッシュ強制無効化フラグ
  * @param computeHash 入力ハッシュを計算する関数
  * @param execute ステップの実処理
- * @param defaultCostUsd キャッシュヒットせず実行した場合のデフォルトコスト（ローカル処理は0）
+ * @param getLlmInfo LLM ステップのコスト・トークン情報取得関数（ローカル処理は省略）
  */
 async function executeStep<T>(
   stepName: string,
@@ -267,7 +296,7 @@ async function executeStep<T>(
   force: boolean,
   computeHash: () => string,
   execute: () => T | Promise<T>,
-  defaultCostUsd: number | null,
+  getLlmInfo?: () => LlmStepInfo,
 ): Promise<T> {
   progress.stepStart(stepName, stepIndex, TOTAL_STEPS);
 
@@ -277,16 +306,20 @@ async function executeStep<T>(
   if (canSkip) {
     const cached = await cache.read(stepName);
     const costUsd = cached?.cost?.estimatedUsd ?? 0;
-    progress.stepComplete(stepName, stepIndex, TOTAL_STEPS, costUsd);
+    const tokenUsage = cached?.cost
+      ? { inputTokens: cached.cost.inputTokens, outputTokens: cached.cost.outputTokens }
+      : undefined;
+    progress.stepComplete(stepName, stepIndex, TOTAL_STEPS, costUsd, tokenUsage);
     // shouldSkip が true なら cached は必ず存在する
     const output = (cached?.output ?? null) as T;
     return output;
   }
 
   const result = await execute();
-  const costUsd = defaultCostUsd ?? 0;
-  await cache.write(stepName, inputHash, result, null);
-  progress.stepComplete(stepName, stepIndex, TOTAL_STEPS, costUsd);
+  const llmInfo = getLlmInfo?.();
+  const costUsd = llmInfo?.costUsd ?? 0;
+  await cache.write(stepName, inputHash, result, llmInfo?.costRecord ?? null);
+  progress.stepComplete(stepName, stepIndex, TOTAL_STEPS, costUsd, llmInfo?.tokenUsage);
 
   return result;
 }

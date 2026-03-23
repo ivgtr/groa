@@ -34,9 +34,13 @@ vi.mock("@groa/embed", () => ({
 }));
 
 const mockCreateLlmBackend = vi.fn();
-vi.mock("@groa/llm-client", () => ({
-  createLlmBackend: (...args: unknown[]) => mockCreateLlmBackend(...args),
-}));
+vi.mock("@groa/llm-client", async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    createLlmBackend: (...args: unknown[]) => mockCreateLlmBackend(...args),
+  };
+});
 
 vi.mock("@groa/config", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@groa/config")>();
@@ -239,7 +243,7 @@ describe("runGenerate", () => {
     expect(mockGenerate).toHaveBeenCalledWith(
       MOCK_PERSONA,
       MOCK_RETRIEVE_RESULT.forGeneration,
-      MOCK_BACKEND,
+      expect.objectContaining({ inner: MOCK_BACKEND }),
       params,
     );
   });
@@ -261,7 +265,7 @@ describe("runGenerate", () => {
       MOCK_GENERATED_TEXT,
       MOCK_RETRIEVE_RESULT.forEvaluation,
       MOCK_PERSONA,
-      MOCK_BACKEND,
+      expect.objectContaining({ inner: MOCK_BACKEND }),
     );
   });
 
@@ -329,7 +333,7 @@ describe("runGenerate", () => {
         variants[i],
         MOCK_RETRIEVE_RESULT.forEvaluation,
         MOCK_PERSONA,
-        MOCK_BACKEND,
+        expect.objectContaining({ inner: MOCK_BACKEND }),
       );
     }
   });

@@ -71,10 +71,14 @@ vi.mock("@groa/embed", () => ({
 }));
 
 const mockCreateLlmBackend = vi.fn();
-vi.mock("@groa/llm-client", () => ({
-  createLlmBackend: (...args: unknown[]) => mockCreateLlmBackend(...args),
-  BatchClient: vi.fn(),
-}));
+vi.mock("@groa/llm-client", async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    createLlmBackend: (...args: unknown[]) => mockCreateLlmBackend(...args),
+    BatchClient: vi.fn(),
+  };
+});
 
 vi.mock("@groa/config", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@groa/config")>();
