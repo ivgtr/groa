@@ -68,7 +68,7 @@ describe("write / read", () => {
     expect(typeof cached.timestamp).toBe("number");
   });
 
-  it(".groa/{stepName}.json のパスに保存する", async () => {
+  it("{cacheDir}/{stepName}.json のパスに保存する", async () => {
     await manager.write("stats", "hash123", { data: true });
     const content = await readFile(join(cacheDir, "stats.json"), "utf-8");
     const parsed = JSON.parse(content) as Record<string, unknown>;

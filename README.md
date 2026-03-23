@@ -83,21 +83,21 @@ pnpm groa config set models.deep opus
 ツイートデータからペルソナプロファイルを構築します（Step 0-5）。
 
 ```bash
-pnpm groa build <tweets.json|tweets.js>
+pnpm groa build <name> <tweets.json|tweets.js>
 ```
 
 groa 形式でない外部データ（Twint / snscrape 出力、Twitter/X 公式エクスポート等）は自動検知して変換されます。明示的にフォーマットを指定することもできます:
 
 ```bash
 # プリセット指定
-pnpm groa build tweets.json --format twint
-pnpm groa build tweets.js --format twitter-archive
+pnpm groa build alice tweets.json --format twint
+pnpm groa build alice tweets.js --format twitter-archive
 
 # Twitter/X 公式エクスポートの tweets.js を直接指定（自動検知）
-pnpm groa build tweets.js
+pnpm groa build alice tweets.js
 
 # カスタムキーマッピング
-pnpm groa build tweets.json --map-text body --map-timestamp posted_at --map-id tweet_id
+pnpm groa build alice tweets.json --map-text body --map-timestamp posted_at --map-id tweet_id
 ```
 
 オプション:
@@ -114,7 +114,7 @@ pnpm groa build tweets.json --map-text body --map-timestamp posted_at --map-id t
 構築済みプロファイルを使ってテキストを生成します（Step 6-8）。
 
 ```bash
-pnpm groa generate "技術トレンド"
+pnpm groa generate alice "技術トレンド"
 ```
 
 オプション:
@@ -132,11 +132,11 @@ pnpm groa generate "技術トレンド"
 ### ユーティリティコマンド
 
 ```bash
-pnpm groa inspect          # PersonaDocument の内容を表示
-pnpm groa cost             # 累計コストを表示
-pnpm groa clean            # 全キャッシュを削除
-pnpm groa clean --step <name>  # 特定ステップ以降のキャッシュを削除
-pnpm groa config           # 現在の設定を表示
+pnpm groa inspect alice                 # PersonaDocument の内容を表示
+pnpm groa cost alice                    # 累計コストを表示
+pnpm groa clean alice                   # 全キャッシュを削除
+pnpm groa clean alice --step classify   # 特定ステップ以降のキャッシュを削除
+pnpm groa config                        # 現在の設定を表示
 ```
 
 ## コスト見積

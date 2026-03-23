@@ -1075,7 +1075,7 @@ type BuildStepId = "preprocess" | "stats" | "classify" | "analyze" | "synthesize
 
 ### 5.2 StepCache
 
-各ステップの出力はJSONファイルとして保存する。ファイル名規則: `{projectDir}/.groa/{stepName}.json`
+各ステップの出力はJSONファイルとして保存する。ファイル名規則: `{projectDir}/.groa/{buildName}/{stepName}.json`（`buildName` は `--name` オプションで指定）
 
 ```typescript
 interface StepCache {

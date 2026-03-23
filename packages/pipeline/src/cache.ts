@@ -31,7 +31,7 @@ const API_KEY_PATTERNS = [
 
 /**
  * 中間結果の永続化・入力ハッシュスキップを管理する。
- * 各ステップの出力を `.groa/{stepName}.json` に保存し、
+ * 各ステップの出力を `{cacheDir}/{stepName}.json` に保存し、
  * 再実行時に入力ハッシュが一致すればスキップする。
  */
 export class StepCacheManager {
