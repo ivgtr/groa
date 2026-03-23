@@ -8,7 +8,7 @@
 # 1. 設定ファイルを生成（対話形式でバックエンドとモデルを選択）
 pnpm groa init
 
-# 2. テキストデータからプロファイルを構築
+# 2. テキストデータからプロファイルを構築（ファイルパスまたはURLを指定）
 pnpm groa build alice data.json
 
 # 3. プロファイルを使ってテキストを生成
@@ -110,8 +110,10 @@ pnpm groa config set models.deep opus
 テキストデータからペルソナプロファイルを構築します（Step 0-5）。
 
 ```bash
-pnpm groa build <name> <data.json|data.js>
+pnpm groa build <name> <file|url>
 ```
+
+ローカルファイル（`.json`, `.js`）または `http(s)://` URL を指定できます。
 
 オプション:
 - `--format <name>` — 入力フォーマットを指定（`twint`, `twitter-archive`）。詳細は[入力データ](#入力データ)を参照
@@ -191,6 +193,13 @@ pnpm groa config                        # 現在の設定を表示
 - `--backend <type>` — バックエンド種別を一時的に指定（`anthropic` | `openrouter` | `claude-code`）
 
 ## 入力データ
+
+データソースにはローカルファイル（`.json`, `.js`）または `http(s)://` URL を指定できます。
+
+```bash
+pnpm groa build alice data.json
+pnpm groa build alice https://example.com/data.json
+```
 
 ### groa 形式
 
