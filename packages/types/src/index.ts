@@ -44,15 +44,28 @@ export type {
 export {
   VoiceBankEntrySchema,
   PersonaDocumentSchema,
-  EvaluationResultSchema,
-  GeneratedTextSchema,
 } from "./output.js";
 export type {
   VoiceBankEntry,
   PersonaDocument,
-  EvaluationResult,
-  GeneratedText,
 } from "./output.js";
 
 export { TweetEmbeddingSchema, EmbeddingIndexSchema } from "./embedding.js";
 export type { TweetEmbedding, EmbeddingIndex } from "./embedding.js";
+
+export {
+  SESSION_MODES,
+  SessionModeSchema,
+  PARTICIPANT_ROLES,
+  SessionParticipantSchema,
+  SessionTurnSchema,
+  SessionEvaluationSchema,
+  SessionSchema,
+} from "./session.js";
+export type {
+  SessionMode,
+  SessionParticipant,
+  SessionTurn,
+  SessionEvaluation,
+  Session,
+} from "./session.js";

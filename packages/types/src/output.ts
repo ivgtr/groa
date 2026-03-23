@@ -1,5 +1,5 @@
 import { z } from "zod/v4";
-import { TweetIdSchema, TimestampSchema, ModelIdStringSchema } from "./brand.js";
+import { TimestampSchema } from "./brand.js";
 import { CorpusMetadataSchema } from "./input.js";
 import { TaggedTweetSchema, AttitudePatternSchema } from "./intermediate.js";
 
@@ -25,26 +25,3 @@ export const PersonaDocumentSchema = z.object({
 });
 
 export type PersonaDocument = z.infer<typeof PersonaDocumentSchema>;
-
-// --- EvaluationResult ---
-
-export const EvaluationResultSchema = z.object({
-  authenticity: z.number(),
-  styleNaturalness: z.number(),
-  attitudeConsistency: z.number(),
-  rationale: z.string(),
-});
-
-export type EvaluationResult = z.infer<typeof EvaluationResultSchema>;
-
-// --- GeneratedText ---
-
-export const GeneratedTextSchema = z.object({
-  text: z.string(),
-  topic: z.string(),
-  evaluation: EvaluationResultSchema.nullable(),
-  fewShotIds: z.array(TweetIdSchema),
-  modelUsed: ModelIdStringSchema,
-});
-
-export type GeneratedText = z.infer<typeof GeneratedTextSchema>;
