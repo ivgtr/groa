@@ -119,11 +119,13 @@ const GenerateStepSchema = StepOverrideSchema.extend({
   defaultTemperature: z.number().default(0.7),
   maxLength: z.number().default(280),
   numVariants: z.number().default(1),
+  autoTurnLimit: z.number().default(8),
 }).default(() => ({
   ...STEP_OVERRIDE_DEFAULT,
   defaultTemperature: 0.7,
   maxLength: 280,
   numVariants: 1,
+  autoTurnLimit: 8,
 }));
 
 const EvaluateStepSchema = StepOverrideSchema.extend({
@@ -159,6 +161,7 @@ const StepsSchema = z
       defaultTemperature: 0.7,
       maxLength: 280,
       numVariants: 1,
+      autoTurnLimit: 8,
     },
     evaluate: { ...STEP_OVERRIDE_DEFAULT, threshold: 6.0 },
   }));
