@@ -166,8 +166,21 @@ export async function runBuild(
         resolved.backend === "anthropic" && resolved.apiKey
           ? new BatchClient(resolved.apiKey, resolved.model)
           : null;
+      const batchSize = config.steps.classify.batchSize ?? 50;
+      let warningsFlushed = false;
       return classify(corpus, backend, batchClient, {
-        batchSize: config.steps.classify.batchSize,
+        batchSize,
+        onProgress: (processed, total) => {
+          if (!warningsFlushed) {
+            warningsFlushed = true;
+            for (const w of backend.getWarnings()) {
+              progress.stepWarning("classify", w);
+            }
+          }
+          const batchNum = Math.ceil(processed / batchSize);
+          const totalBatches = Math.ceil(total / batchSize);
+          progress.stepProgress("classify", `${batchNum}/${totalBatches}`);
+        },
       });
     },
     null,

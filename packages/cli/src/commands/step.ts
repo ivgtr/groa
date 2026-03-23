@@ -140,7 +140,16 @@ export async function runStepCommand(
     options.costLimit === false ? null : config.costLimitUsd;
 
   const progress = new PipelineProgress({
-    onProgress: createProgressDisplay(),
+    onProgress: createProgressDisplay({
+      stepNames: {
+        preprocess: "Preprocessing",
+        stats: "Analyzing style",
+        classify: "Classifying",
+        analyze: "Analyzing clusters",
+        synthesize: "Synthesizing persona",
+        embed: "Building embedding index",
+      },
+    }),
     costLimitUsd,
   });
 
@@ -360,8 +369,21 @@ async function runClassifyStep(
     resolved.backend === "anthropic" && resolved.apiKey
       ? new BatchClient(resolved.apiKey, resolved.model)
       : null;
+  const batchSize = config.steps.classify.batchSize ?? 50;
+  let warningsFlushed = false;
   const taggedTweets = await classify(corpus, backend, batchClient, {
-    batchSize: config.steps.classify.batchSize,
+    batchSize,
+    onProgress: (processed, total) => {
+      if (!warningsFlushed) {
+        warningsFlushed = true;
+        for (const w of backend.getWarnings()) {
+          progress.stepWarning("classify", w);
+        }
+      }
+      const batchNum = Math.ceil(processed / batchSize);
+      const totalBatches = Math.ceil(total / batchSize);
+      progress.stepProgress("classify", `${batchNum}/${totalBatches}`);
+    },
   });
 
   await cache.write("classify", inputHash, taggedTweets, null);

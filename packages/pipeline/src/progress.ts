@@ -12,6 +12,11 @@ export type StepEvent =
       detail: string;
     }
   | {
+      type: "step-warning";
+      stepName: string;
+      message: string;
+    }
+  | {
       type: "step-complete";
       stepName: string;
       stepIndex: number;
@@ -115,6 +120,11 @@ export class PipelineProgress {
   /** ステップの進行状況を通知 */
   stepProgress(stepName: string, detail: string): void {
     this.onProgress({ type: "step-progress", stepName, detail });
+  }
+
+  /** ステップの警告を通知 */
+  stepWarning(stepName: string, message: string): void {
+    this.onProgress({ type: "step-warning", stepName, message });
   }
 
   /** ステップ完了を通知し、コスト上限をチェック */
