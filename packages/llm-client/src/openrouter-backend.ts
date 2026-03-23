@@ -42,7 +42,7 @@ export class OpenRouterBackend implements LlmBackend {
       throw new Error(
         "OpenRouter APIキーが設定されていません。" +
           "環境変数 OPENROUTER_API_KEY を設定するか、" +
-          "groa.json の apiKeys.openrouter にAPIキーを指定してください。",
+          "groa.config.json の apiKeys.openrouter にAPIキーを指定してください。",
       );
     }
     this.apiKey = config.apiKey;

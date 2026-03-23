@@ -1,12 +1,11 @@
 import { Command } from "commander";
 import select from "@inquirer/select";
-import { writeFile, access } from "node:fs/promises";
+import { writeFile, access, mkdir } from "node:fs/promises";
 import { createInterface } from "node:readline";
 import { join } from "node:path";
 import { createDefaultConfig, BACKENDS, BACKEND_TIER_DEFAULTS } from "@groa/config";
 import type { BackendType } from "@groa/config";
-
-const CONFIG_FILE = "groa.json";
+import { CONFIG_FILE, configFilePath } from "./config.js";
 
 const BACKEND_CHOICES: { name: string; value: BackendType; description: string }[] = [
   { name: "anthropic（推奨）", value: "anthropic", description: "Anthropic Messages API を直接呼び出す。Batch API・Prompt Caching 対応" },
@@ -23,7 +22,7 @@ interface InitOptions {
 
 export function initCommand(): Command {
   return new Command("init")
-    .description("groa.json の雛形を生成する")
+    .description("groa.config.json の雛形を生成する")
     .option(
       "--backend <type>",
       "バックエンド種別 (anthropic | openrouter | claude-code)",
@@ -55,7 +54,7 @@ export async function runInit(
   cwd = process.cwd(),
   modelOverrides: Partial<{ quick: string; standard: string; deep: string }> = {},
 ): Promise<string> {
-  const filePath = join(cwd, CONFIG_FILE);
+  const filePath = configFilePath(cwd);
 
   // 既存ファイルの確認
   let fileExists = false;
@@ -88,6 +87,7 @@ export async function runInit(
   }
 
   const json = JSON.stringify(config, null, 2);
+  await mkdir(join(cwd, ".groa"), { recursive: true });
   await writeFile(filePath, json + "\n", "utf-8");
 
   return filePath;
@@ -99,7 +99,7 @@ export interface InitPrompts {
   inputModel: (question: string, defaultValue: string) => Promise<string>;
 }
 
-/** 対話形式で groa.json を生成する */
+/** 対話形式で groa.config.json を生成する */
 export async function runInitInteractive(
   cwd = process.cwd(),
   prompts?: InitPrompts,
@@ -129,7 +129,7 @@ export async function runInitInteractive(
     deep: deep || undefined,
   });
 
-  console.log("\n✓ groa.json を生成しました");
+  console.log("\n✓ groa.config.json を生成しました");
   return filePath;
 }
 

@@ -60,7 +60,7 @@ export class AnthropicBackend implements LlmBackend {
       throw new Error(
         "APIキーが設定されていません。" +
           "環境変数 ANTHROPIC_API_KEY を設定するか、" +
-          "groa.json の apiKeys.anthropic にAPIキーを指定してください。",
+          "groa.config.json の apiKeys.anthropic にAPIキーを指定してください。",
       );
     }
     this.apiKey = config.apiKey;

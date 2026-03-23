@@ -149,7 +149,7 @@ function expandEnvVar(
   });
 }
 
-/** groa.json にAPIキーが直接記述されている場合のパーミッション警告 */
+/** groa.config.json にAPIキーが直接記述されている場合のパーミッション警告 */
 export function checkConfigPermissions(
   config: GroaConfig,
   filePath: string,
@@ -179,7 +179,7 @@ export function checkConfigPermissions(
       const permissions = stat.mode & 0o777;
       if (permissions !== 0o600) {
         warnings.push(
-          `groa.json にAPIキーが直接記述されています。` +
+          `groa.config.json にAPIキーが直接記述されています。` +
             `パーミッションが ${permissions.toString(8)} です（推奨: 600）。` +
             `chmod 600 ${filePath} を実行してください。`,
         );

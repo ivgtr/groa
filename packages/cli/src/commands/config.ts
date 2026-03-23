@@ -3,7 +3,11 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { GroaConfigSchema } from "@groa/config";
 
-const CONFIG_FILE = "groa.json";
+export const CONFIG_FILE = "groa.config.json";
+
+export function configFilePath(cwd = process.cwd()): string {
+  return join(cwd, ".groa", CONFIG_FILE);
+}
 
 export function configCommand(): Command {
   const cmd = new Command("config").description("設定を表示・更新する");
@@ -39,7 +43,7 @@ export function configCommand(): Command {
 export async function loadConfig(
   cwd = process.cwd(),
 ): Promise<ReturnType<typeof GroaConfigSchema.parse>> {
-  const filePath = join(cwd, CONFIG_FILE);
+  const filePath = configFilePath(cwd);
 
   let raw: string;
   try {
@@ -70,7 +74,7 @@ export async function runConfigSet(
   value: string,
   cwd = process.cwd(),
 ): Promise<void> {
-  const filePath = join(cwd, CONFIG_FILE);
+  const filePath = configFilePath(cwd);
 
   let raw: string;
   try {
