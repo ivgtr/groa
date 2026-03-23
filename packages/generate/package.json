@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@groa/types": "workspace:*",
-    "@groa/llm-client": "workspace:*"
+    "@groa/llm-client": "workspace:*",
+    "@groa/retrieve": "workspace:*",
+    "@groa/embed": "workspace:*"
   }
 }

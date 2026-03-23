@@ -140,9 +140,15 @@ importers:
 
   packages/generate:
     dependencies:
+      '@groa/embed':
+        specifier: workspace:*
+        version: link:../embed
       '@groa/llm-client':
         specifier: workspace:*
         version: link:../llm-client
+      '@groa/retrieve':
+        specifier: workspace:*
+        version: link:../retrieve
       '@groa/types':
         specifier: workspace:*
         version: link:../types
