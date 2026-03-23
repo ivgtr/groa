@@ -30,6 +30,9 @@ export type { CostRecord, PipelineCostSummary } from "./cost.js";
 
 export { maskSensitiveValues } from "./log-mask.js";
 
+export { parseLlmResponse } from "./parse-json.js";
+export type { ParseLlmOptions } from "./parse-json.js";
+
 export { BatchClient, BatchTimeoutError } from "./batch-client.js";
 export type {
   BatchRequest,
