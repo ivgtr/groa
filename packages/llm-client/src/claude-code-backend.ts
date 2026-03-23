@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process";
+import { spawn, execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { ModelIdString } from "@groa/types";
 import type { ResolvedStepConfig } from "@groa/config";
@@ -7,7 +7,7 @@ import { withRetry } from "./retry.js";
 
 const execFileAsync = promisify(execFile);
 
-const DEFAULT_TIMEOUT_MS = 180_000;
+const DEFAULT_TIMEOUT_MS = 600_000;
 const DEFAULT_PATH = "claude";
 
 interface ClaudeCodeJsonResponse {
@@ -15,7 +15,7 @@ interface ClaudeCodeJsonResponse {
   subtype: string;
   is_error: boolean;
   result: string;
-  cost_usd: number;
+  total_cost_usd: number;
   duration_ms: number;
   num_turns: number;
   usage?: {
@@ -24,6 +24,64 @@ interface ClaudeCodeJsonResponse {
     cache_creation_input_tokens?: number;
     cache_read_input_tokens?: number;
   };
+}
+
+/**
+ * spawn でコマンドを実行し、stdin にデータを書き込んで stdout/stderr を収集する。
+ * execFile の input オプションは非同期版では動作しないため、spawn を使用する。
+ */
+function spawnWithStdin(
+  command: string,
+  args: string[],
+  stdinData: string,
+  timeoutMs: number,
+): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      stdio: ["pipe", "pipe", "pipe"],
+      timeout: timeoutMs,
+    });
+
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", (data: Buffer) => {
+      stdout += data.toString("utf8");
+    });
+
+    child.stderr.on("data", (data: Buffer) => {
+      stderr += data.toString("utf8");
+    });
+
+    child.on("error", (err) => {
+      reject(err);
+    });
+
+    child.on("close", (code, signal) => {
+      if (code === 0) {
+        resolve({ stdout, stderr });
+      } else {
+        const error = new Error(
+          `Command failed: ${command} ${args[0]}`,
+        ) as Error & {
+          code: number | null;
+          signal: string | null;
+          killed: boolean;
+          stderr: string;
+          stdout: string;
+        };
+        error.code = code;
+        error.signal = signal;
+        error.killed = child.killed;
+        error.stderr = stderr;
+        error.stdout = stdout;
+        reject(error);
+      }
+    });
+
+    child.stdin.write(stdinData, "utf8");
+    child.stdin.end();
+  });
 }
 
 /** Claude Code CLI バックエンド (Node.js のみ) */
@@ -92,23 +150,26 @@ export class ClaudeCodeBackend implements LlmBackend {
 
     const args = [
       "-p",
-      userMessages,
-      "--model",
-      this.modelId,
-      "--output-format",
-      "json",
-      "--max-turns",
-      "1",
+      "--model", this.modelId,
+      "--tools", "",                // groa はツール不要 — コンテキスト注入を抑制
+      "--setting-sources", "user",  // project/local の CLAUDE.md・MCP をスキップ
+      "--no-session-persistence",   // セッション保存不要
+      "--effort", "low",            // extended thinking を抑制し応答速度を改善
     ];
 
     if (systemMessage) {
       args.push("--system-prompt", systemMessage.content);
     }
 
+    args.push("--output-format", "json", "--max-turns", "1");
+
     try {
-      const { stdout } = await execFileAsync(this.claudePath, args, {
-        timeout: DEFAULT_TIMEOUT_MS,
-      });
+      const { stdout } = await spawnWithStdin(
+        this.claudePath,
+        args,
+        userMessages,
+        DEFAULT_TIMEOUT_MS,
+      );
 
       const data = JSON.parse(stdout) as ClaudeCodeJsonResponse;
 
@@ -126,8 +187,8 @@ export class ClaudeCodeBackend implements LlmBackend {
         inputTokens: data.usage?.input_tokens ?? null,
         outputTokens: data.usage?.output_tokens ?? null,
         modelUsed: ModelIdString(this.modelId),
-        cachedTokens: 0,
-        costUsd: data.cost_usd ?? null,
+        cachedTokens: data.usage?.cache_read_input_tokens ?? 0,
+        costUsd: data.total_cost_usd ?? null,
       };
     } catch (error) {
       if (
@@ -143,6 +204,35 @@ export class ClaudeCodeBackend implements LlmBackend {
         (nonRetryableError as unknown as { nonRetryable: boolean }).nonRetryable = true;
         throw nonRetryableError;
       }
+
+      // コマンド失敗時の診断情報を出力
+      const execError = error as {
+        code?: number | string;
+        signal?: string;
+        killed?: boolean;
+        stderr?: string;
+        stdout?: string;
+      };
+      console.error(
+        `[claude-code] コマンド失敗:`,
+        JSON.stringify(
+          {
+            message:
+              error instanceof Error ? error.message : String(error),
+            exitCode: execError.code,
+            signal: execError.signal,
+            killed: execError.killed,
+            stderr: execError.stderr?.slice(0, 500),
+            args: args.map((a) =>
+              a.length > 100 ? `${a.slice(0, 100)}...(${a.length}chars)` : a,
+            ),
+            inputLength: userMessages.length,
+          },
+          null,
+          2,
+        ),
+      );
+
       throw error;
     }
   }
