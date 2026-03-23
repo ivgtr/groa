@@ -11,6 +11,7 @@ import { runGenerate, StepCacheManager } from "@groa/pipeline";
 import type { StepEvent } from "@groa/pipeline";
 import { loadConfig } from "./config.js";
 import { ensureConsent } from "./consent.js";
+import { createProgressDisplay } from "../progress-display.js";
 
 interface GenerateCommandOptions {
   numVariants: string;
@@ -128,32 +129,14 @@ export async function runGenerateCommand(
 }
 
 export function createGenerateProgressDisplay(): (event: StepEvent) => void {
-  const stepNames: Record<string, string> = {
-    retrieve: "Retrieving similar tweets",
-    generate: "Generating text",
-    evaluate: "Evaluating quality",
-  };
-
-  return (event: StepEvent) => {
-    switch (event.type) {
-      case "step-start":
-        process.stdout.write(
-          `[Step ${event.stepIndex + 6}] ${stepNames[event.stepName] ?? event.stepName}...`,
-        );
-        break;
-      case "step-complete":
-        console.log(` [$${event.costUsd.toFixed(2)}]`);
-        break;
-      case "pipeline-complete":
-        // Results are displayed separately
-        break;
-      case "cost-limit-exceeded":
-        console.error(
-          `\u2717 コスト上限に達しました: $${event.currentCostUsd.toFixed(2)} / $${event.limitUsd.toFixed(2)}`,
-        );
-        break;
-    }
-  };
+  return createProgressDisplay({
+    stepNames: {
+      retrieve: "Retrieving similar tweets",
+      generate: "Generating text",
+      evaluate: "Evaluating quality",
+    },
+    stepIndexOffset: 6,
+  });
 }
 
 export function displayResults(

@@ -166,7 +166,13 @@ describe("validateTweets", () => {
 describe("createProgressDisplay", () => {
   it("step-start イベントでステップ名を表示する", async () => {
     const { createProgressDisplay } = await importBuild();
-    const display = createProgressDisplay();
+    const display = createProgressDisplay({
+      stepNames: {
+        preprocess: "Preprocessing",
+        stats: "Analyzing style",
+        classify: "Classifying",
+      },
+    });
     const writeSpy = vi
       .spyOn(process.stdout, "write")
       .mockImplementation(() => true);
@@ -186,7 +192,13 @@ describe("createProgressDisplay", () => {
 
   it("step-complete イベントでコストを表示する", async () => {
     const { createProgressDisplay } = await importBuild();
-    const display = createProgressDisplay();
+    const display = createProgressDisplay({
+      stepNames: {
+        preprocess: "Preprocessing",
+        stats: "Analyzing style",
+        classify: "Classifying",
+      },
+    });
     const logSpy = vi
       .spyOn(console, "log")
       .mockImplementation(() => {});
@@ -206,7 +218,14 @@ describe("createProgressDisplay", () => {
 
   it("pipeline-complete イベントで合計コストを表示する", async () => {
     const { createProgressDisplay } = await importBuild();
-    const display = createProgressDisplay();
+    const display = createProgressDisplay({
+      stepNames: {
+        preprocess: "Preprocessing",
+        stats: "Analyzing style",
+        classify: "Classifying",
+      },
+      pipelineCompleteMessage: "✓ Profile built.",
+    });
     const logSpy = vi
       .spyOn(console, "log")
       .mockImplementation(() => {});
@@ -224,7 +243,13 @@ describe("createProgressDisplay", () => {
 
   it("cost-limit-exceeded イベントでエラーメッセージを表示する", async () => {
     const { createProgressDisplay } = await importBuild();
-    const display = createProgressDisplay();
+    const display = createProgressDisplay({
+      stepNames: {
+        preprocess: "Preprocessing",
+        stats: "Analyzing style",
+        classify: "Classifying",
+      },
+    });
     const errorSpy = vi
       .spyOn(console, "error")
       .mockImplementation(() => {});

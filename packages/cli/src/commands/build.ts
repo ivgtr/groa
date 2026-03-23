@@ -3,7 +3,8 @@ import { TweetSchema } from "@groa/types";
 import type { Tweet } from "@groa/types";
 import type { BackendType } from "@groa/config";
 import { runBuild } from "@groa/pipeline";
-import type { StepEvent } from "@groa/pipeline";
+import { createProgressDisplay } from "../progress-display.js";
+
 import {
   detectFormat,
   convertTweets,
@@ -94,7 +95,17 @@ export async function runBuildCommand(
 
   // 7. Run build with progress display
   await runBuild(config, tweets, {
-    onProgress: createProgressDisplay(),
+    onProgress: createProgressDisplay({
+      stepNames: {
+        preprocess: "Preprocessing",
+        stats: "Analyzing style",
+        classify: "Classifying",
+        analyze: "Analyzing clusters",
+        synthesize: "Synthesizing persona",
+        embed: "Building embedding index",
+      },
+      pipelineCompleteMessage: "✓ Profile built.",
+    }),
     force: options.force ?? false,
     costLimitUsd,
   });
@@ -239,36 +250,4 @@ export function validateTweets(raw: unknown): Tweet[] {
   return tweets;
 }
 
-export function createProgressDisplay(): (event: StepEvent) => void {
-  const stepNames: Record<string, string> = {
-    preprocess: "Preprocessing",
-    stats: "Analyzing style",
-    classify: "Classifying",
-    analyze: "Analyzing clusters",
-    synthesize: "Synthesizing persona",
-    embed: "Building embedding index",
-  };
-
-  return (event: StepEvent) => {
-    switch (event.type) {
-      case "step-start":
-        process.stdout.write(
-          `[Step ${event.stepIndex}] ${stepNames[event.stepName] ?? event.stepName}...`,
-        );
-        break;
-      case "step-complete":
-        console.log(` [$${event.costUsd.toFixed(2)}]`);
-        break;
-      case "pipeline-complete":
-        console.log(
-          `✓ Profile built. Total cost: $${event.totalCostUsd.toFixed(2)}`,
-        );
-        break;
-      case "cost-limit-exceeded":
-        console.error(
-          `✗ コスト上限に達しました: $${event.currentCostUsd.toFixed(2)} / $${event.limitUsd.toFixed(2)}`,
-        );
-        break;
-    }
-  };
-}
+export { createProgressDisplay } from "../progress-display.js";
