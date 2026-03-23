@@ -86,7 +86,7 @@ describe("createProgram", () => {
 });
 
 describe("groa init", () => {
-  it("groa.json の雛形を生成する", async () => {
+  it("groa.config.json の雛形を生成する", async () => {
     const filePath = await runInit("anthropic", testDir);
 
     const content = await readFile(filePath, "utf-8");
@@ -99,7 +99,7 @@ describe("groa init", () => {
   it("anthropic バックエンドで APIキー環境変数プレースホルダを設定する", async () => {
     await runInit("anthropic", testDir);
     const content = await readFile(
-      join(testDir, "groa.json"),
+      join(testDir, ".groa", "groa.config.json"),
       "utf-8",
     );
     const config = JSON.parse(content) as Record<string, unknown>;
@@ -110,14 +110,14 @@ describe("groa init", () => {
   it("claude-code バックエンドを選択できる", async () => {
     await runInit("claude-code", testDir);
     const content = await readFile(
-      join(testDir, "groa.json"),
+      join(testDir, ".groa", "groa.config.json"),
       "utf-8",
     );
     const config = JSON.parse(content) as Record<string, unknown>;
     expect(config.backend).toBe("claude-code");
   });
 
-  it("既に groa.json が存在する場合はエラーを投げる", async () => {
+  it("既に groa.config.json が存在する場合はエラーを投げる", async () => {
     await runInit("anthropic", testDir);
     await expect(runInit("anthropic", testDir)).rejects.toThrow("既に存在します");
   });
@@ -128,7 +128,7 @@ describe("groa init", () => {
       standard: "claude-sonnet-4-6-20250227",
     });
     const content = await readFile(
-      join(testDir, "groa.json"),
+      join(testDir, ".groa", "groa.config.json"),
       "utf-8",
     );
     const config = JSON.parse(content) as Record<string, unknown>;
@@ -141,7 +141,7 @@ describe("groa init", () => {
   it("openrouter バックエンドで APIキー環境変数プレースホルダを設定する", async () => {
     await runInit("openrouter", testDir);
     const content = await readFile(
-      join(testDir, "groa.json"),
+      join(testDir, ".groa", "groa.config.json"),
       "utf-8",
     );
     const config = JSON.parse(content) as Record<string, unknown>;
@@ -169,7 +169,7 @@ describe("groa init (interactive)", () => {
   it("対話モードで claude-code を選択するとティア名がデフォルト設定される", async () => {
     await runInitInteractive(testDir, mockPrompts("claude-code"));
 
-    const config = JSON.parse(await readFile(join(testDir, "groa.json"), "utf-8")) as Record<string, unknown>;
+    const config = JSON.parse(await readFile(join(testDir, ".groa", "groa.config.json"), "utf-8")) as Record<string, unknown>;
     expect(config.backend).toBe("claude-code");
     const models = config.models as Record<string, string | null>;
     expect(models.quick).toBe("haiku");
@@ -180,7 +180,7 @@ describe("groa init (interactive)", () => {
   it("対話モードでカスタムモデルを指定できる", async () => {
     await runInitInteractive(testDir, mockPrompts("claude-code", ["", "claude-sonnet-4-6-20250227", ""]));
 
-    const config = JSON.parse(await readFile(join(testDir, "groa.json"), "utf-8")) as Record<string, unknown>;
+    const config = JSON.parse(await readFile(join(testDir, ".groa", "groa.config.json"), "utf-8")) as Record<string, unknown>;
     const models = config.models as Record<string, string | null>;
     expect(models.quick).toBe("haiku");
     expect(models.standard).toBe("claude-sonnet-4-6-20250227");
@@ -190,7 +190,7 @@ describe("groa init (interactive)", () => {
   it("対話モードで anthropic を選択した場合モデルは null のまま", async () => {
     await runInitInteractive(testDir, mockPrompts("anthropic"));
 
-    const config = JSON.parse(await readFile(join(testDir, "groa.json"), "utf-8")) as Record<string, unknown>;
+    const config = JSON.parse(await readFile(join(testDir, ".groa", "groa.config.json"), "utf-8")) as Record<string, unknown>;
     expect(config.backend).toBe("anthropic");
     const models = config.models as Record<string, string | null>;
     expect(models.quick).toBeNull();
@@ -200,7 +200,7 @@ describe("groa init (interactive)", () => {
 });
 
 describe("groa config", () => {
-  it("groa.json から設定を読み込む", async () => {
+  it("groa.config.json から設定を読み込む", async () => {
     await runInit("anthropic", testDir);
     const config = await loadConfig(testDir);
 
@@ -208,14 +208,15 @@ describe("groa config", () => {
     expect(config.costLimitUsd).toBe(10.0);
   });
 
-  it("groa.json が存在しない場合はエラーを投げる", async () => {
+  it("groa.config.json が存在しない場合はエラーを投げる", async () => {
     await expect(loadConfig(testDir)).rejects.toThrow(
-      "groa.json が見つかりません",
+      "groa.config.json が見つかりません",
     );
   });
 
   it("不正なJSONの場合はエラーを投げる", async () => {
-    await writeFile(join(testDir, "groa.json"), "{ invalid json", "utf-8");
+    await mkdir(join(testDir, ".groa"), { recursive: true });
+    await writeFile(join(testDir, ".groa", "groa.config.json"), "{ invalid json", "utf-8");
 
     await expect(loadConfig(testDir)).rejects.toThrow("JSON形式が不正です");
   });
@@ -246,10 +247,10 @@ describe("groa config set", () => {
     expect(config.backend).toBe("openrouter");
   });
 
-  it("groa.json が存在しない場合はエラーを投げる", async () => {
+  it("groa.config.json が存在しない場合はエラーを投げる", async () => {
     await expect(
       runConfigSet("models.standard", "test", testDir),
-    ).rejects.toThrow("groa.json が見つかりません");
+    ).rejects.toThrow("groa.config.json が見つかりません");
   });
 
   it("不正な backend 値はバリデーションエラー", async () => {

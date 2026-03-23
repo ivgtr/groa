@@ -183,7 +183,7 @@ describe("checkConfigPermissions", () => {
     const config = GroaConfigSchema.parse({
       apiKeys: { anthropic: "sk-direct-key" },
     });
-    const warnings = checkConfigPermissions(config, "groa.json", () => ({
+    const warnings = checkConfigPermissions(config, "groa.config.json", () => ({
       mode: 0o100644,
     }));
     expect(warnings).toHaveLength(1);
@@ -194,7 +194,7 @@ describe("checkConfigPermissions", () => {
     const config = GroaConfigSchema.parse({
       apiKeys: { anthropic: "sk-direct-key" },
     });
-    const warnings = checkConfigPermissions(config, "groa.json", () => ({
+    const warnings = checkConfigPermissions(config, "groa.config.json", () => ({
       mode: 0o100600,
     }));
     expect(warnings).toHaveLength(0);
@@ -204,7 +204,7 @@ describe("checkConfigPermissions", () => {
     const config = GroaConfigSchema.parse({
       apiKeys: { anthropic: "${ANTHROPIC_API_KEY}" },
     });
-    const warnings = checkConfigPermissions(config, "groa.json", () => ({
+    const warnings = checkConfigPermissions(config, "groa.config.json", () => ({
       mode: 0o100644,
     }));
     expect(warnings).toHaveLength(0);
@@ -212,7 +212,7 @@ describe("checkConfigPermissions", () => {
 
   it("APIキーが未設定の場合は警告なし", () => {
     const config = createDefaultConfig();
-    const warnings = checkConfigPermissions(config, "groa.json", () => ({
+    const warnings = checkConfigPermissions(config, "groa.config.json", () => ({
       mode: 0o100644,
     }));
     expect(warnings).toHaveLength(0);
