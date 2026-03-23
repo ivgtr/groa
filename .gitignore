@@ -8,6 +8,10 @@ dist/
 
 *.tsbuildinfo
 
+# docs (internal)
+.docs/tasks/
+.docs/prompts/
+
 .DS_Store
 Thumbs.db
 
