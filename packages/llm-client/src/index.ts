@@ -28,6 +28,8 @@ export {
 export { calculateCost, CostTracker } from "./cost.js";
 export type { CostRecord, PipelineCostSummary } from "./cost.js";
 
+export { TokenTrackingBackend } from "./token-tracking-backend.js";
+
 export { maskSensitiveValues } from "./log-mask.js";
 
 export { parseLlmResponse } from "./parse-json.js";
