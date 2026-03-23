@@ -293,7 +293,7 @@ describe("runBuildCommand", () => {
     mockReadJsonSource.mockResolvedValue(tweets);
 
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    await runBuildCommand("tweets.json");
+    await runBuildCommand("tweets.json", { name: "test-build" });
     logSpy.mockRestore();
 
     expect(mockReadJsonSource).toHaveBeenCalledWith(
@@ -316,7 +316,7 @@ describe("runBuildCommand", () => {
     mockReadJsonSource.mockResolvedValue(tweets);
 
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    await runBuildCommand("tweets.json", { backend: "claude-code" });
+    await runBuildCommand("tweets.json", { name: "test-build", backend: "claude-code" });
     logSpy.mockRestore();
 
     expect(mockRunBuild).toHaveBeenCalledWith(
@@ -332,7 +332,7 @@ describe("runBuildCommand", () => {
     mockReadJsonSource.mockResolvedValue(tweets);
 
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    await runBuildCommand("tweets.json", { force: true });
+    await runBuildCommand("tweets.json", { name: "test-build", force: true });
     logSpy.mockRestore();
 
     expect(mockRunBuild).toHaveBeenCalledWith(
@@ -348,7 +348,7 @@ describe("runBuildCommand", () => {
     mockReadJsonSource.mockResolvedValue(tweets);
 
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    await runBuildCommand("tweets.json", { costLimit: false });
+    await runBuildCommand("tweets.json", { name: "test-build", costLimit: false });
     logSpy.mockRestore();
 
     expect(mockRunBuild).toHaveBeenCalledWith(
@@ -358,16 +358,33 @@ describe("runBuildCommand", () => {
     );
   });
 
-  it("anthropic バックエンドで ensureConsent が呼ばれる", async () => {
+  it("anthropic バックエンドで ensureConsent がベースの cacheDir で呼ばれる", async () => {
     const { runBuildCommand } = await importBuild();
     const tweets = makeTweets(10);
     mockReadJsonSource.mockResolvedValue(tweets);
 
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    await runBuildCommand("tweets.json");
+    await runBuildCommand("tweets.json", { name: "test-build" });
     logSpy.mockRestore();
 
+    // ensureConsent はベースの cacheDir（mutation 前）で呼ばれる
     expect(mockEnsureConsent).toHaveBeenCalledWith(".groa");
+  });
+
+  it("runBuild に渡される config.cacheDir に name が反映される", async () => {
+    const { runBuildCommand } = await importBuild();
+    const tweets = makeTweets(10);
+    mockReadJsonSource.mockResolvedValue(tweets);
+
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    await runBuildCommand("tweets.json", { name: "my-profile" });
+    logSpy.mockRestore();
+
+    expect(mockRunBuild).toHaveBeenCalledWith(
+      expect.objectContaining({ cacheDir: ".groa/my-profile" }),
+      tweets,
+      expect.anything(),
+    );
   });
 
   it("claude-code バックエンドでは ensureConsent が呼ばれない", async () => {
@@ -380,7 +397,7 @@ describe("runBuildCommand", () => {
     mockLoadConfig.mockResolvedValue(config);
 
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    await runBuildCommand("tweets.json");
+    await runBuildCommand("tweets.json", { name: "test-build" });
     logSpy.mockRestore();
 
     expect(mockEnsureConsent).not.toHaveBeenCalled();
@@ -392,7 +409,7 @@ describe("runBuildCommand", () => {
     mockReadJsonSource.mockResolvedValue(tweets);
 
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    await runBuildCommand("tweets.json");
+    await runBuildCommand("tweets.json", { name: "test-build" });
 
     expect(logSpy).toHaveBeenCalledWith("Backend: anthropic");
     logSpy.mockRestore();
@@ -402,7 +419,7 @@ describe("runBuildCommand", () => {
     const { runBuildCommand } = await importBuild();
     mockReadJsonSource.mockResolvedValue({ not: "array" });
 
-    await expect(runBuildCommand("tweets.json")).rejects.toThrow(
+    await expect(runBuildCommand("tweets.json", { name: "test-build" })).rejects.toThrow(
       "配列形式である必要があります",
     );
   });
@@ -411,7 +428,7 @@ describe("runBuildCommand", () => {
     const { runBuildCommand } = await importBuild();
     mockReadJsonSource.mockResolvedValue(makeTweets(5));
 
-    await expect(runBuildCommand("tweets.json")).rejects.toThrow(
+    await expect(runBuildCommand("tweets.json", { name: "test-build" })).rejects.toThrow(
       "少なすぎます",
     );
   });

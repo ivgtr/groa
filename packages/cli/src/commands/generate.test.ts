@@ -186,7 +186,7 @@ describe("runGenerateCommand", () => {
       .spyOn(process.stdout, "write")
       .mockImplementation(() => true);
 
-    await runGenerateCommand("AIの未来");
+    await runGenerateCommand("AIの未来", { name: "test-build" });
 
     logSpy.mockRestore();
     writeSpy.mockRestore();
@@ -216,7 +216,7 @@ describe("runGenerateCommand", () => {
       .spyOn(process.stdout, "write")
       .mockImplementation(() => true);
 
-    await runGenerateCommand("テスト", { numVariants: 3 });
+    await runGenerateCommand("テスト", { name: "test-build", numVariants: 3 });
 
     logSpy.mockRestore();
     writeSpy.mockRestore();
@@ -238,7 +238,7 @@ describe("runGenerateCommand", () => {
       .spyOn(process.stdout, "write")
       .mockImplementation(() => true);
 
-    await runGenerateCommand("テスト", { temperature: 0.5 });
+    await runGenerateCommand("テスト", { name: "test-build", temperature: 0.5 });
 
     logSpy.mockRestore();
     writeSpy.mockRestore();
@@ -260,7 +260,7 @@ describe("runGenerateCommand", () => {
       .spyOn(process.stdout, "write")
       .mockImplementation(() => true);
 
-    await runGenerateCommand("テスト", { maxLength: 500 });
+    await runGenerateCommand("テスト", { name: "test-build", maxLength: 500 });
 
     logSpy.mockRestore();
     writeSpy.mockRestore();
@@ -282,7 +282,7 @@ describe("runGenerateCommand", () => {
       .spyOn(process.stdout, "write")
       .mockImplementation(() => true);
 
-    await runGenerateCommand("テスト", { styleHint: "カジュアル" });
+    await runGenerateCommand("テスト", { name: "test-build", styleHint: "カジュアル" });
 
     logSpy.mockRestore();
     writeSpy.mockRestore();
@@ -301,7 +301,7 @@ describe("runGenerateCommand", () => {
     const { runGenerateCommand } = await importGenerate();
     mockCacheRead.mockResolvedValue(null);
 
-    await expect(runGenerateCommand("テスト")).rejects.toThrow(
+    await expect(runGenerateCommand("テスト", { name: "test-build" })).rejects.toThrow(
       "ビルド済みプロファイルが見つかりません",
     );
   });
@@ -320,7 +320,7 @@ describe("runGenerateCommand", () => {
       return Promise.resolve(null);
     });
 
-    await expect(runGenerateCommand("テスト")).rejects.toThrow(
+    await expect(runGenerateCommand("テスト", { name: "test-build" })).rejects.toThrow(
       "分類結果が見つかりません",
     );
   });
@@ -347,7 +347,7 @@ describe("runGenerateCommand", () => {
       return Promise.resolve(null);
     });
 
-    await expect(runGenerateCommand("テスト")).rejects.toThrow(
+    await expect(runGenerateCommand("テスト", { name: "test-build" })).rejects.toThrow(
       "Embedding結果が見つかりません",
     );
   });
@@ -359,7 +359,7 @@ describe("runGenerateCommand", () => {
       .spyOn(process.stdout, "write")
       .mockImplementation(() => true);
 
-    await runGenerateCommand("テスト");
+    await runGenerateCommand("テスト", { name: "test-build" });
 
     const calls = logSpy.mock.calls.map((c) => c[0]);
     expect(calls).toContain("生成されたテキストです。");
@@ -388,7 +388,7 @@ describe("runGenerateCommand", () => {
       .spyOn(process.stdout, "write")
       .mockImplementation(() => true);
 
-    await runGenerateCommand("テスト", { numVariants: 2 });
+    await runGenerateCommand("テスト", { name: "test-build", numVariants: 2 });
 
     const calls = logSpy.mock.calls.map((c) => c[0]);
     expect(calls).toContain("--- Variant 1 ---");
@@ -407,7 +407,7 @@ describe("runGenerateCommand", () => {
       .spyOn(process.stdout, "write")
       .mockImplementation(() => true);
 
-    await runGenerateCommand("テスト", { backend: "claude-code" });
+    await runGenerateCommand("テスト", { name: "test-build", backend: "claude-code" });
 
     logSpy.mockRestore();
     writeSpy.mockRestore();
@@ -430,7 +430,7 @@ describe("runGenerateCommand", () => {
       .spyOn(process.stdout, "write")
       .mockImplementation(() => true);
 
-    await runGenerateCommand("テスト", { costLimit: false });
+    await runGenerateCommand("テスト", { name: "test-build", costLimit: false });
 
     logSpy.mockRestore();
     writeSpy.mockRestore();

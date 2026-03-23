@@ -82,6 +82,7 @@ describe("createProgram", () => {
     const options = program.options.map((o) => o.long);
     expect(options).toContain("--no-cost-limit");
   });
+
 });
 
 describe("groa init", () => {
@@ -263,22 +264,22 @@ describe("groa config set", () => {
 
 describe("groa inspect", () => {
   it("PersonaDocument の内容をJSON文字列で返す", async () => {
-    const cacheDir = join(testDir, ".groa");
+    const cacheDir = join(testDir, ".groa", "test-build");
     const cacheManager = new StepCacheManager(cacheDir);
     const persona = { body: "テストペルソナ", version: "1.0" };
     await cacheManager.write("synthesize", "hash123", persona);
 
-    const result = await runInspect(testDir);
+    const result = await runInspect("test-build", testDir);
     const parsed = JSON.parse(result) as Record<string, unknown>;
     expect(parsed.body).toBe("テストペルソナ");
     expect(parsed.version).toBe("1.0");
   });
 
   it("PersonaDocument が存在しない場合はアクション付きエラーを投げる", async () => {
-    await expect(runInspect(testDir)).rejects.toThrow(
+    await expect(runInspect("test-build", testDir)).rejects.toThrow(
       "PersonaDocument が見つかりません",
     );
-    await expect(runInspect(testDir)).rejects.toThrow("groa build");
+    await expect(runInspect("test-build", testDir)).rejects.toThrow("groa build test-build");
   });
 });
 
@@ -286,7 +287,7 @@ describe("groa inspect", () => {
 
 describe("groa cost", () => {
   it("キャッシュされたステップのコストを合計表示する", async () => {
-    const cacheDir = join(testDir, ".groa");
+    const cacheDir = join(testDir, ".groa", "test-build");
     const cacheManager = new StepCacheManager(cacheDir);
 
     await cacheManager.write("classify", "h1", {}, {
@@ -304,14 +305,14 @@ describe("groa cost", () => {
       estimatedUsd: 1.5,
     });
 
-    const result = await runCost(testDir);
+    const result = await runCost("test-build", testDir);
     expect(result).toContain("classify");
     expect(result).toContain("analyze");
     expect(result).toContain("合計");
   });
 
   it("collectCostSummary で正確なコスト合計を取得できる", async () => {
-    const cacheDir = join(testDir, ".groa");
+    const cacheDir = join(testDir, ".groa", "test-build");
     const cacheManager = new StepCacheManager(cacheDir);
 
     await cacheManager.write("classify", "h1", {}, {
@@ -331,8 +332,8 @@ describe("groa cost", () => {
   });
 
   it("キャッシュが存在しない場合はアクション付きエラーを投げる", async () => {
-    await expect(runCost(testDir)).rejects.toThrow("キャッシュが見つかりません");
-    await expect(runCost(testDir)).rejects.toThrow("groa build");
+    await expect(runCost("test-build", testDir)).rejects.toThrow("キャッシュが見つかりません");
+    await expect(runCost("test-build", testDir)).rejects.toThrow("groa build test-build");
   });
 });
 
@@ -340,12 +341,12 @@ describe("groa cost", () => {
 
 describe("groa clean", () => {
   it("全キャッシュを削除する", async () => {
-    const cacheDir = join(testDir, ".groa");
+    const cacheDir = join(testDir, ".groa", "test-build");
     const cacheManager = new StepCacheManager(cacheDir);
     await cacheManager.write("classify", "h1", {});
     await cacheManager.write("analyze", "h2", {});
 
-    const result = await runClean(undefined, testDir);
+    const result = await runClean("test-build", undefined, testDir);
     expect(result).toContain("2 件");
 
     const remaining = await cacheManager.listCachedSteps();
@@ -353,14 +354,14 @@ describe("groa clean", () => {
   });
 
   it("特定ステップ以降のキャッシュを連鎖削除する", async () => {
-    const cacheDir = join(testDir, ".groa");
+    const cacheDir = join(testDir, ".groa", "test-build");
     const cacheManager = new StepCacheManager(cacheDir);
     await cacheManager.write("preprocess", "h0", {});
     await cacheManager.write("stats", "h1", {});
     await cacheManager.write("classify", "h2", {});
     await cacheManager.write("analyze", "h3", {});
 
-    const result = await runClean("stats", testDir);
+    const result = await runClean("test-build", "stats", testDir);
     expect(result).toContain("stats");
 
     // stats 以降 (stats, classify, analyze) が削除される
@@ -372,13 +373,13 @@ describe("groa clean", () => {
   });
 
   it("存在しないステップ名でエラーを投げる", async () => {
-    await expect(runClean("nonexistent", testDir)).rejects.toThrow(
+    await expect(runClean("test-build", "nonexistent", testDir)).rejects.toThrow(
       "キャッシュが見つかりません",
     );
   });
 
   it("削除するキャッシュがない場合はメッセージを返す", async () => {
-    const result = await runClean(undefined, testDir);
+    const result = await runClean("test-build", undefined, testDir);
     expect(result).toContain("削除するキャッシュがありません");
   });
 });
