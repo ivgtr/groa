@@ -41,7 +41,12 @@ export { inspectCommand, runInspect } from "./commands/inspect.js";
 export { costCommand, runCost, collectCostSummary } from "./commands/cost.js";
 export type { CostSummary } from "./commands/cost.js";
 export { cleanCommand, runClean } from "./commands/clean.js";
-export { generateCommand, runGenerateCommand } from "./commands/generate.js";
+export { generateCommand } from "./commands/generate.js";
+export { tweetCommand, runTweetCommand } from "./commands/generate-tweet.js";
+export { converseCommand, runConverseCommand } from "./commands/generate-converse.js";
+export { multiCommand, runMultiCommand } from "./commands/generate-multi.js";
+export { chatCommand, runChatCommand } from "./commands/generate-chat.js";
+export { loadBuildArtifacts } from "./commands/build-artifacts.js";
 export {
   assertFileExists,
   readJsonFile,

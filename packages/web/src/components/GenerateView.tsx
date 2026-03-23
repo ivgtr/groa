@@ -62,11 +62,11 @@ function ResultCard({
             />
             <ScoreBadge
               label="文体自然度"
-              score={result.evaluation.styleNaturalness}
+              score={result.evaluation.coherence}
             />
             <ScoreBadge
               label="態度一貫性"
-              score={result.evaluation.attitudeConsistency}
+              score={result.evaluation.consistency}
             />
           </div>
 
@@ -150,8 +150,8 @@ export function GenerateView() {
           topic: topic.trim(),
           evaluation: {
             authenticity: 7.5 + Math.random() * 2,
-            styleNaturalness: 6.0 + Math.random() * 3,
-            attitudeConsistency: 7.0 + Math.random() * 2,
+            coherence: 6.0 + Math.random() * 3,
+            consistency: 7.0 + Math.random() * 2,
             rationale:
               "文体の一貫性が高く、語尾パターンやトピックへの態度が元のツイートと整合的です。",
           },

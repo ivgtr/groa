@@ -83,6 +83,23 @@ describe("createProgram", () => {
     expect(options).toContain("--no-cost-limit");
   });
 
+  it("generate サブコマンドが登録されている", () => {
+    const program = createProgram();
+    const commands = program.commands.map((c) => c.name());
+    expect(commands).toContain("generate");
+  });
+
+  it("generate にサブコマンド tweet/converse/multi/chat が登録されている", () => {
+    const program = createProgram();
+    const generateCmd = program.commands.find((c) => c.name() === "generate");
+    expect(generateCmd).toBeDefined();
+    const subcommands = generateCmd!.commands.map((c) => c.name());
+    expect(subcommands).toContain("tweet");
+    expect(subcommands).toContain("converse");
+    expect(subcommands).toContain("multi");
+    expect(subcommands).toContain("chat");
+  });
+
 });
 
 describe("groa init", () => {

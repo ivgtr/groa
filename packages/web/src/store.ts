@@ -13,8 +13,8 @@ export interface GenerationResult {
   topic: string;
   evaluation: {
     authenticity: number;
-    styleNaturalness: number;
-    attitudeConsistency: number;
+    coherence: number;
+    consistency: number;
     rationale: string;
   } | null;
   fewShotIds: string[];
