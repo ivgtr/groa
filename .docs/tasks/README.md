@@ -69,12 +69,30 @@
 | [T17.3.1](items/T17.3.1.md) | groa init モデル指定オプション追加 | Must | S | Done | T17.1.1 |
 | [T17.3.2](items/T17.3.2.md) | groa config set サブコマンド追加 | Must | M | Done | T17.3.1 |
 
+### T18: セッションベース生成（generate リファクタリング）
+
+generateコマンドを「全てはセッション」の設計に0ベースで再設計。4モード（tweet / converse / multi / chat）対応。
+
+| ID | タスク名 | 優先度 | サイズ | ステータス | 依存 |
+|----|---------|--------|--------|-----------|------|
+| [T18.1.1](items/T18.1.1.md) | Session型定義の追加 | Must | M | Done | - |
+| [T18.1.2](items/T18.1.2.md) | SessionParams・PersonaContext型の追加 | Must | S | Done | T18.1.1 |
+| [T18.2.1](items/T18.2.1.md) | セッションエンジン（session-runner）実装 | Must | L | Done | T18.1.2, T18.2.2, T18.2.3 |
+| [T18.2.2](items/T18.2.2.md) | セッション用プロンプトビルダー実装 | Must | M | Done | T18.1.1, T18.1.2 |
+| [T18.2.3](items/T18.2.3.md) | 自動継続判断（continuation）実装 | Must | S | Done | T18.1.1 |
+| [T18.3.1](items/T18.3.1.md) | セッション評価（evaluateSession）実装 | Must | M | Done | T18.1.1 |
+| [T18.4.1](items/T18.4.1.md) | セッションパイプライン・SessionStore実装 | Must | M | Done | T18.2.1, T18.3.1 |
+| [T18.5.1](items/T18.5.1.md) | CLI generate サブコマンド体系への移行 | Must | M | Done | T18.4.1 |
+| [T18.5.2](items/T18.5.2.md) | 設定スキーマの拡張（autoTurnLimit） | Must | S | Done | - |
+| [T18.6.1](items/T18.6.1.md) | 旧API（GeneratedText / runGenerate）の移行・削除 | Must | M | Done | T18.5.1 |
+| [T18.7.1](items/T18.7.1.md) | セッション関連のテスト整備 | Must | M | Done | T18.2.1, T18.3.1, T18.4.1 |
+
 ## 進捗サマリ
-- Must: 43/43 完了
+- Must: 54/54 完了（T18系: 11/11）
 - Should: 9/9 完了
 - Could: 0/1 完了
 
-## 実行サマリ（2026-03-22）
-- 完了: 47 タスク
+## 実行サマリ（2026-03-23 23:30）
+- 完了: 58 タスク
 - ブロック: 0 タスク
 - 未着手: 1 タスク（T15.2.5: Could優先度のため自動実行対象外）
