@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```
 packages/
-├── types/        # 共有型定義・Zodスキーマ
+├── types/        # 共有型定義・Zodスキーマ（Session, SessionTurn 等）
 ├── config/       # 設定管理（groa.config.json）
 ├── convert/      # 外部JSON変換（フィールドマッピング・フォーマット検出）
 ├── llm-client/   # LLM API抽象層（anthropic / openrouter / claude-code）
@@ -20,11 +20,15 @@ packages/
 ├── classify/     # Step 2: 分類（Haiku）
 ├── analyze/      # Step 3: クラスタ分析（Sonnet）
 ├── synthesize/   # Step 4: ペルソナ合成（Opus）
-├── embed/        # Step 5: Embedding（OpenAI）
+├── embed/        # Step 5: Embedding（multilingual-e5-small, ローカル）
 ├── retrieve/     # Step 6: 類似検索
-├── generate/     # Step 7: テキスト生成（Sonnet）
-├── evaluate/     # Step 8: 品質評価（Sonnet）
+├── generate/     # Step 7: セッション実行（4モード: tweet/converse/multi/chat）
+│   ├── session-runner.ts      # セッションエンジン
+│   └── prompt/                # プロンプト構築（system, turn, continuation）
+├── evaluate/     # Step 8: セッション評価
 ├── pipeline/     # パイプラインオーケストレーション
+│   ├── run-session.ts         # セッションパイプライン
+│   └── session-store.ts       # セッションログ永続化（.groa/sessions/）
 ├── cli/          # CLIエントリポイント（Commander.js）
 └── web/          # Webエントリポイント（Vite + React + Zustand + Tailwind）
 ```
@@ -55,7 +59,8 @@ pnpm lint                                   # リント
 - 仕様書に記載のない機能追加や設計変更は確認を取ること
 - 仕様変更時は `spec.md` と `design-spec.md` の整合性を確認すること
 - 中間結果は `.groa/{buildName}/{stepName}.json` に永続化（入力ハッシュ一致時スキップ）
-- APIキーは中間結果JSONに書き出さない・ログでマスク
+- セッションログは `.groa/sessions/{sessionId}.json` に永続化
+- APIキーは中間結果・セッションログJSONに書き出さない・ログでマスク
 
 ### 仕様書（3層構造）
 

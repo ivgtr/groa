@@ -55,8 +55,8 @@ groa/
 │   ├── synthesize/         # Step 4: ペルソナ文書合成
 │   ├── embed/              # Step 5: Embedding生成
 │   ├── retrieve/           # Step 6: 類似検索
-│   ├── generate/           # Step 7: テキスト生成
-│   ├── evaluate/           # Step 8: 品質評価
+│   ├── generate/           # Step 7: セッション実行（4モード対応）
+│   ├── evaluate/           # Step 8: セッション評価
 │   ├── llm-client/         # LLM API抽象層（デュアルバックエンド）
 │   ├── pipeline/           # パイプラインオーケストレーション
 │   ├── config/             # 設定管理
@@ -88,7 +88,9 @@ groa/
           ▼                 ▼                  ▼
     ┌──────────┐    ┌───────────┐  ┌──────────┐
     │ generate │    │ evaluate  │  │ classify │
-    └──────────┘    └───────────┘  └──────────┘
+    │→ retrieve│    └───────────┘  └──────────┘
+    │→ embed   │
+    └──────────┘
 
     ┌──────────┐
     │  embed   │  → types（ローカル推論、llm-client不使用）
@@ -446,26 +448,69 @@ interface VoiceBankEntry {
 }
 ```
 
-#### GeneratedText / EvaluationResult
+#### Session / SessionTurn / SessionEvaluation
 
 ```typescript
-interface GeneratedText {
-  text: string;
-  topic: string;
-  evaluation: EvaluationResult | null; // 評価済みの場合
-  fewShotIds: TweetId[];
-  modelUsed: ModelIdString;
+/** セッションモード */
+type SessionMode = "tweet" | "converse" | "multi" | "chat";
+
+/** セッション参加者 */
+interface SessionParticipant {
+  /** ビルド名（chatモードのユーザーは "__user__"） */
+  buildName: string;
+  /** 参加者種別 */
+  role: "persona" | "human";
 }
 
-interface EvaluationResult {
-  /** 「同一人物が書いたように読めるか」の総合スコア (0.0-10.0) */
+/** セッションの1ターン */
+interface SessionTurn {
+  /** ターン番号（0始まり） */
+  index: number;
+  /** 発言者のbuildName */
+  speakerId: string;
+  /** 生成テキスト */
+  text: string;
+  /** few-shotに使用したツイートID */
+  fewShotIds: TweetId[];
+  /** 使用したモデルID */
+  modelUsed: ModelIdString;
+  /** 生成日時 */
+  timestamp: Timestamp;
+}
+
+/** セッション全体の評価結果（3軸はモードにより解釈が異なる） */
+interface SessionEvaluation {
+  /** tweetモード: 同一人物感 / 会話モード: ターン平均のキャラらしさ (0.0-10.0) */
   authenticity: number;
-  /** 文体の自然さ (0.0-10.0) */
-  styleNaturalness: number;
-  /** 態度・トーンの一致度 (0.0-10.0) */
-  attitudeConsistency: number;
+  /** tweetモード: 文体の自然さ / 会話モード: 文脈的一貫性 (0.0-10.0) */
+  coherence: number;
+  /** tweetモード: 態度一致度 / 会話モード: 会話全体の自然さ (0.0-10.0) */
+  consistency: number;
   /** 評価の根拠（自然言語） */
   rationale: string;
+}
+
+/**
+ * セッション: 全てのテキスト生成の統一単位。
+ * 単発ツイート生成は「1ターン・1参加者のセッション」として扱う。
+ */
+interface Session {
+  /** セッション一意識別子（形式: {mode}-{YYYYMMDD}-{6桁hex}） */
+  id: string;
+  /** セッションモード */
+  mode: SessionMode;
+  /** セッションのトピック */
+  topic: string;
+  /** 参加者一覧 */
+  participants: SessionParticipant[];
+  /** ターン一覧 */
+  turns: SessionTurn[];
+  /** セッション全体の評価（Step 8完了後に付与） */
+  evaluation: SessionEvaluation | null;
+  /** セッション開始日時 */
+  createdAt: Timestamp;
+  /** セッション完了日時 */
+  completedAt: Timestamp | null;
 }
 ```
 
@@ -979,7 +1024,7 @@ interface RetrieveOptions {
 - `sentimentDiversity: true` の場合、可能な限り異なる `sentiment` のツイートを含める。同一 sentiment に偏った候補セットを避ける
 - `categoryDiversity: true` の場合、トピックに直接関連するカテゴリだけでなく、隣接カテゴリのツイートも1-2件含める
 
-### 4.7 Step 7: テキスト生成 (`packages/generate/`)
+### 4.7 Step 7: セッション実行 (`packages/generate/`)
 
 > 対応する要件: spec.md §5.2
 
@@ -996,27 +1041,85 @@ interface RetrieveOptions {
   few-shotツイート（Step 6のretrieve結果）
 ```
 
+#### セッションエンジン
+
+全モードを統一的に処理するセッションエンジン（`session-runner.ts`）を実装する。
+
+```typescript
+async function runSession(
+  contexts: PersonaContext[],
+  backend: LlmBackend,
+  embedder: Embedder,
+  params: SessionParams,
+  callbacks?: {
+    onTurnComplete?: (turn: SessionTurn) => void;
+    getUserInput?: () => Promise<string | null>;
+  },
+): Promise<Session>
+```
+
+モードによる分岐はプロンプト構築と次話者決定のロジックのみ:
+- **tweet**: maxTurns=1、retrieve → 1ターン生成 → 完了
+- **converse**: retrieve → Nターン生成（前ターンをhistoryに積む）→ 継続判断 → 完了
+- **multi**: ラウンドロビンで話者切替、各ターンでsystemプロンプトを現話者に切替
+- **chat**: getUserInput()でhuman入力受取 → retrieve → persona応答 → ループ
+
+#### プロンプト構成（全モード共通構造）
+
+```
+[System Prompt] ← Prompt Cache対象
+  {speaker.persona.body}（ペルソナ記述本文）
+  ボイスバンクから5-10件（トピック関連を優先選定）
+  モード別生成ルール
+
+[User Message]
+  会話履歴（converse/multi/chatのみ、直近ターンを転写）
+  トピック/指示
+  few-shotツイート（Step 6のretrieve結果）
+  生成指示
+```
+
+#### 自動継続判断（converse/multiモード）
+
+quickモデル（temperature 0.0）で「会話を続けるべきか」をメタ判断する:
+- 入力: 直近の会話ターン
+- 出力: `{ "shouldContinue": boolean }`
+- 失敗時: `shouldContinue: true` にフォールバック（途中打切りより続行が安全）
+- 安全上限: `autoTurnLimit`（デフォルト8）を超えたら強制終了
+
 #### Prompt Caching配置
 
 `PersonaDocument.body` + ボイスバンク部分は毎回同一であるため、`anthropic` バックエンドではPrompt Cachingにより2回目以降のコストを90%削減できる。`claude-code` バックエンドではClaude Code内部のキャッシュ機構に依存する。
 
 `cache_control` は system prompt の末尾ブロック（生成ルールの後）に配置する。
 
-#### GenerateParams
+#### SessionParams
 
 ```typescript
-interface GenerateParams {
-  topic: string;
-  temperature: number;      // default: 0.7
-  maxLength: number;         // default: 280
-  numVariants: number;       // default: 1
-  styleHint: string | null;  // 「皮肉っぽく」等の追加指示
+/** セッション実行パラメータ */
+interface SessionParams {
+  mode: SessionMode;
+  topic?: string;             // tweet/converseで必須（未指定時エラー）、multi/chatは省略可（省略時はLLMが自動生成）
+  temperature?: number;       // default: 0.7
+  maxLength?: number;          // default: 280
+  maxTurns?: number | null;    // null=自動判断（converse/multi/chat）
+  autoTurnLimit?: number;      // default: 8（自動判断時の安全上限）
+  numVariants?: number;        // default: 1（tweetモード専用）
+  styleHint?: string | null;   // 追加スタイル指示
+}
+
+/** プロファイルコンテキスト（セッション参加者ごとに必要） */
+interface PersonaContext {
+  buildName: string;
+  persona: PersonaDocument;
+  taggedTweets: TaggedTweet[];
+  embeddingIndex: EmbeddingIndex;
 }
 ```
 
 #### temperature: `0.7`（`0.3`〜`1.0` で調整可能）
 
-### 4.8 Step 8: 品質評価 (`packages/evaluate/`)
+### 4.8 Step 8: セッション評価 (`packages/evaluate/`)
 
 > 対応する要件: spec.md §5.3
 
@@ -1040,9 +1143,9 @@ interface GenerateParams {
   {生成されたテキスト}
 
   ## 評価基準
-  1. authenticity: 同一人物が書いたように読めるか (0-10)
-  2. styleNaturalness: 文体が自然か、わざとらしくないか (0-10)
-  3. attitudeConsistency: このトピックに対するこの人の態度として妥当か (0-10)
+  1. authenticity: 同一人物が書いたように読めるか（会話モードでは各ターンの平均） (0-10)
+  2. coherence: 文体の自然さ（会話モードでは文脈的一貫性） (0-10)
+  3. consistency: 態度の一致度（会話モードでは会話全体の自然さ） (0-10)
   4. rationale: 上記スコアの根拠を具体的に述べよ
 ```
 
@@ -1064,14 +1167,14 @@ interface GenerateParams {
 ### 5.1 実行関数シグネチャ
 
 ```typescript
-async function runBuild(config: PipelineConfig, input: Tweet[]): Promise<PersonaDocument>;
-async function runStep(config: PipelineConfig, step: BuildStepId): Promise<void>;
-async function runGenerate(config: PipelineConfig, persona: PersonaDocument, params: GenerateParams): Promise<GeneratedText>;
+async function runBuild(config: GroaConfig, input: Tweet[]): Promise<PersonaDocument>;
+async function runStep(config: GroaConfig, step: BuildStepId): Promise<void>;
+async function runSessionPipeline(config: GroaConfig, contexts: PersonaContext[], params: SessionParams, options?: SessionPipelineOptions): Promise<Session>;
 
 type BuildStepId = "preprocess" | "stats" | "classify" | "analyze" | "synthesize" | "embed";
 ```
 
-`Retrieve`, `Generate`, `Evaluate` は `BuildStepId` に含めない。これらはプロファイル構築後の「生成フェーズ」に属し、`runGenerate` 内で連鎖的に実行される。
+`Retrieve`, `Generate`, `Evaluate` は `BuildStepId` に含めない。これらはプロファイル構築後の「生成フェーズ」に属し、`runSessionPipeline` 内で連鎖的に実行される。
 
 ### 5.2 StepCache
 
@@ -1125,7 +1228,8 @@ interface PipelineCostSummary {
   "backend": "anthropic",
 
   "apiKeys": {
-    "anthropic": "${ANTHROPIC_API_KEY}"
+    "anthropic": "${ANTHROPIC_API_KEY}",
+    "openrouter": "${OPENROUTER_API_KEY}"
   },
 
   "claudeCode": {
@@ -1152,7 +1256,7 @@ interface PipelineCostSummary {
     "synthesize": { "model": null, "apiKey": null },
     "embed":    { "model": null, "apiKey": null },
     "retrieve": { "topK": 5, "sentimentDiversity": true, "categoryDiversity": true },
-    "generate": { "defaultTemperature": 0.7, "maxLength": 280, "numVariants": 1, "model": null, "apiKey": null },
+    "generate": { "defaultTemperature": 0.7, "maxLength": 280, "numVariants": 1, "autoTurnLimit": 8, "model": null, "apiKey": null },
     "evaluate": { "threshold": 6.0, "model": null, "apiKey": null }
   },
 
@@ -1169,6 +1273,14 @@ interface PipelineCostSummary {
 1. steps.{stepName}.apiKey / steps.{stepName}.model  （工程別指定、最優先）
 2. apiKeys.{provider} / models.{tier}                  （グローバル設定）
 3. 環境変数 ANTHROPIC_API_KEY                            （フォールバック）
+```
+
+#### `openrouter` バックエンド時
+
+```
+1. steps.{stepName}.apiKey / steps.{stepName}.model  （工程別指定、最優先）
+2. apiKeys.openrouter / models.{tier}                  （グローバル設定）
+3. 環境変数 OPENROUTER_API_KEY                           （フォールバック）
 ```
 
 #### `claude-code` バックエンド時
@@ -1380,7 +1492,7 @@ spec.md に散在していた設計判断注記を以下に集約する。
 
 > **設計判断**: `PersonaDocument.body` は「LLMがシステムプロンプトとして直接使用できる自然言語文書」として設計されているため、JSONからプロンプトへの変換ロジックが不要。ペルソナ記述がそのまま指示文となる。
 
-- 対応する要件: spec.md §5.2（REQ-GEN）
+- 対応する要件: spec.md §5.2（REQ-SESSION）
 - 対応する実装: §4.7
 
 ### DJ-8: OpenAI Embedding API から Transformers.js + multilingual-e5-small への移行
@@ -1402,5 +1514,5 @@ spec.md に散在していた設計判断注記を以下に集約する。
 
 > **設計判断**: PersonaDocumentを介した間接評価は「プロファイルとの一致」を測るだけで「本人らしさ」を測れない。元ツイートとの直接比較により、プロファイルが捉え損ねた微細な特徴も評価に反映される。
 
-- 対応する要件: spec.md §5.3（REQ-EVAL）
+- 対応する要件: spec.md §5.3（REQ-SESS-EVAL）
 - 対応する実装: §4.8
