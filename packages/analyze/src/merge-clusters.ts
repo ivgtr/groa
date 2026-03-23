@@ -6,6 +6,7 @@ import type {
   Category,
 } from "@groa/types";
 import type { LlmBackend, LlmRequest } from "@groa/llm-client";
+import { parseLlmResponse } from "@groa/llm-client";
 
 const MERGE_MAX_TOKENS = 4096;
 
@@ -164,8 +165,10 @@ async function mergeSameCategoryAnalyses(
 
   try {
     const response = await backend.complete(request);
-    const raw: unknown = JSON.parse(response.content);
-    const parsed = MERGE_PORTRAIT_RESPONSE_SCHEMA.parse(raw);
+    const parsed = parseLlmResponse(
+      response.content,
+      MERGE_PORTRAIT_RESPONSE_SCHEMA,
+    );
     portrait = parsed.portrait;
   } catch {
     // フォールバック: 最後のチャンク（最新時期）の portrait を採用

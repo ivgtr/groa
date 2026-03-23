@@ -1,6 +1,7 @@
 import { z } from "zod/v4";
 import type { Tweet, TaggedTweet, Category, Sentiment } from "@groa/types";
 import { CategorySchema, SentimentSchema } from "@groa/types";
+import { parseLlmResponse } from "@groa/llm-client";
 
 /** LLMレスポンスの1エントリのZodスキーマ */
 const ClassifyEntrySchema = z.object({
@@ -29,11 +30,10 @@ export function parseClassifyResponse(
   tweets: Tweet[],
 ): ParseResult {
   const tweetMap = new Map<string, Tweet>(tweets.map((t) => [t.id, t]));
-  const jsonContent = extractJson(content);
 
   let rawEntries: unknown[];
   try {
-    const parsed: unknown = JSON.parse(jsonContent);
+    const parsed = parseLlmResponse(content, { expect: "array" });
     if (!Array.isArray(parsed)) {
       return allFallback(tweets);
     }
@@ -104,16 +104,6 @@ export function parseClassifyResponse(
   return { tagged, fallbackCount };
 }
 
-/** JSON文字列を抽出する（コードブロック対応） */
-function extractJson(content: string): string {
-  const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (codeBlockMatch) return codeBlockMatch[1].trim();
-
-  const arrayMatch = content.match(/\[[\s\S]*\]/);
-  if (arrayMatch) return arrayMatch[0];
-
-  return content.trim();
-}
 
 function allFallback(tweets: Tweet[]): ParseResult {
   return {

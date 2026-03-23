@@ -1,5 +1,6 @@
 import type { EvaluationResult } from "@groa/types";
 import { EvaluationResultSchema } from "@groa/types";
+import { parseLlmResponse } from "@groa/llm-client";
 
 /**
  * LLMレスポンスから EvaluationResult をパースする。
@@ -8,11 +9,8 @@ import { EvaluationResultSchema } from "@groa/types";
 export function parseEvaluateResponse(
   content: string,
 ): EvaluationResult | null {
-  const jsonContent = extractJson(content);
-
   try {
-    const raw: unknown = JSON.parse(jsonContent);
-    return EvaluationResultSchema.parse(raw);
+    return parseLlmResponse(content, EvaluationResultSchema);
   } catch (error) {
     console.warn(
       `品質評価レスポンスのパースに失敗: ${
@@ -23,13 +21,3 @@ export function parseEvaluateResponse(
   }
 }
 
-/** JSON文字列を抽出する（コードブロック対応） */
-function extractJson(content: string): string {
-  const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (codeBlockMatch) return codeBlockMatch[1].trim();
-
-  const objectMatch = content.match(/\{[\s\S]*\}/);
-  if (objectMatch) return objectMatch[0];
-
-  return content.trim();
-}

@@ -1,6 +1,7 @@
 import { z } from "zod/v4";
 import type { TopicCluster, ClusterAnalysis, TaggedTweet } from "@groa/types";
 import { TweetId } from "@groa/types";
+import { parseLlmResponse } from "@groa/llm-client";
 
 /** LLMレスポンスの representativeTweet エントリ */
 const RepresentativeTweetSchema = z.object({
@@ -32,12 +33,9 @@ export function parseAnalyzeResponse(
   content: string,
   cluster: TopicCluster,
 ): ClusterAnalysis | null {
-  const jsonContent = extractJson(content);
-
   let parsed: AnalyzeResponse;
   try {
-    const raw: unknown = JSON.parse(jsonContent);
-    parsed = AnalyzeResponseSchema.parse(raw);
+    parsed = parseLlmResponse(content, AnalyzeResponseSchema);
   } catch (error) {
     console.warn(
       `クラスタ "${cluster.category}" の分析レスポンスのパースに失敗しました: ${
@@ -77,13 +75,3 @@ export function parseAnalyzeResponse(
   };
 }
 
-/** JSON文字列を抽出する（コードブロック対応） */
-function extractJson(content: string): string {
-  const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (codeBlockMatch) return codeBlockMatch[1].trim();
-
-  const objectMatch = content.match(/\{[\s\S]*\}/);
-  if (objectMatch) return objectMatch[0];
-
-  return content.trim();
-}

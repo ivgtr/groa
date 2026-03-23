@@ -6,6 +6,7 @@ import type {
   CorpusMetadata,
 } from "@groa/types";
 import { TweetId, Timestamp } from "@groa/types";
+import { parseLlmResponse } from "@groa/llm-client";
 
 /** LLMレスポンスの AttitudePattern */
 const AttitudePatternResponseSchema = z.object({
@@ -33,12 +34,9 @@ export function parseSynthesizeResponse(
   voiceBank: VoiceBankEntry[],
   sourceStats: CorpusMetadata,
 ): PersonaDocument | null {
-  const jsonContent = extractJson(content);
-
   let parsed: SynthesizeResponse;
   try {
-    const raw: unknown = JSON.parse(jsonContent);
-    parsed = SynthesizeResponseSchema.parse(raw);
+    parsed = parseLlmResponse(content, SynthesizeResponseSchema);
   } catch (error) {
     console.warn(
       `ペルソナ合成レスポンスのパースに失敗: ${
@@ -70,13 +68,3 @@ export function parseSynthesizeResponse(
   };
 }
 
-/** JSON文字列を抽出する（コードブロック対応） */
-function extractJson(content: string): string {
-  const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (codeBlockMatch) return codeBlockMatch[1].trim();
-
-  const objectMatch = content.match(/\{[\s\S]*\}/);
-  if (objectMatch) return objectMatch[0];
-
-  return content.trim();
-}
