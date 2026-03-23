@@ -1,3 +1,2 @@
-export { evaluate, isPassingEvaluation } from "./evaluate.js";
-export { buildEvaluatePrompt } from "./evaluate-prompt.js";
-export { parseEvaluateResponse } from "./evaluate-parse.js";
+export { evaluateSession } from "./evaluate-session.js";
+export { buildSessionEvalPrompt } from "./evaluate-session-prompt.js";
