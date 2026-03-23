@@ -49,6 +49,9 @@ export {
   isUrl,
 } from "./commands/validate.js";
 export {
+  validateBuildName,
+} from "./commands/build-name.js";
+export {
   hasConsent,
   saveConsent,
   ensureConsent,

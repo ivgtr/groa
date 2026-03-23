@@ -9,8 +9,10 @@ import type { BackendType } from "@groa/config";
 import type { GenerateParams } from "@groa/generate";
 import { runGenerate, StepCacheManager } from "@groa/pipeline";
 import type { StepEvent } from "@groa/pipeline";
+import { join } from "node:path";
 import { loadConfig } from "./config.js";
 import { ensureConsent } from "./consent.js";
+import { validateBuildName } from "./build-name.js";
 import { createProgressDisplay } from "../progress-display.js";
 
 interface GenerateCommandOptions {
@@ -23,15 +25,18 @@ interface GenerateCommandOptions {
 export function generateCommand(): Command {
   return new Command("generate")
     .description("トピックに基づいてテキストを生成する (Step 6-8)")
+    .argument("<name>", "ビルド名")
     .argument("<topic>", "生成トピック")
     .option("-n, --num-variants <number>", "バリアント数", "1")
     .option("--temp <number>", "temperature (0.3-1.0)", "0.7")
     .option("--max-length <number>", "最大文字数", "280")
     .option("--style-hint <hint>", "スタイルヒント")
     .action(
-      async (topic: string, options: GenerateCommandOptions, cmd: Command) => {
+      async (name: string, topic: string, options: GenerateCommandOptions, cmd: Command) => {
+        validateBuildName(name);
         const globalOpts = cmd.parent?.opts() ?? {};
         await runGenerateCommand(topic, {
+          name,
           numVariants: parseInt(options.numVariants, 10),
           temperature: parseFloat(options.temp),
           maxLength: parseInt(options.maxLength, 10),
@@ -46,13 +51,14 @@ export function generateCommand(): Command {
 export async function runGenerateCommand(
   topic: string,
   options: {
+    name: string;
     numVariants?: number;
     temperature?: number;
     maxLength?: number;
     styleHint?: string | null;
     backend?: string;
     costLimit?: boolean;
-  } = {},
+  },
 ): Promise<void> {
   // 1. Load config
   const config = await loadConfig();
@@ -62,32 +68,35 @@ export async function runGenerateCommand(
     config.backend = options.backend as BackendType;
   }
 
-  // 3. Ensure consent
+  // 3. Ensure consent (ベースの cacheDir で consent)
   if (config.backend === "anthropic" || config.backend === "openrouter") {
     await ensureConsent(config.cacheDir);
   }
 
-  // 4. Read build artifacts from cache
+  // 4. Apply build name to cacheDir
+  config.cacheDir = join(config.cacheDir, options.name);
+
+  // 5. Read build artifacts from cache
   const cache = new StepCacheManager(config.cacheDir);
 
   const synthesizeCache = await cache.read("synthesize");
   if (!synthesizeCache) {
     throw new Error(
-      "ビルド済みプロファイルが見つかりません。\n→ 先に `groa build <tweets.json>` を実行してください。",
+      `ビルド済みプロファイルが見つかりません。\n→ 先に \`groa build ${options.name} <tweets.json>\` を実行してください。`,
     );
   }
 
   const classifyCache = await cache.read("classify");
   if (!classifyCache) {
     throw new Error(
-      "分類結果が見つかりません。\n→ 先に `groa build <tweets.json>` を実行してください。",
+      `分類結果が見つかりません。\n→ 先に \`groa build ${options.name} <tweets.json>\` を実行してください。`,
     );
   }
 
   const embedCache = await cache.read("embed");
   if (!embedCache) {
     throw new Error(
-      "Embedding結果が見つかりません。\n→ 先に `groa build <tweets.json>` を実行してください。",
+      `Embedding結果が見つかりません。\n→ 先に \`groa build ${options.name} <tweets.json>\` を実行してください。`,
     );
   }
 
@@ -95,7 +104,7 @@ export async function runGenerateCommand(
   const taggedTweets = classifyCache.output as TaggedTweet[];
   const embeddingIndex = embedCache.output as EmbeddingIndex;
 
-  // 5. Build generate params
+  // 6. Build generate params
   const params: GenerateParams = {
     topic,
     temperature: options.temperature ?? config.steps.generate.defaultTemperature,
@@ -104,11 +113,11 @@ export async function runGenerateCommand(
     styleHint: options.styleHint ?? null,
   };
 
-  // 6. Determine cost limit
+  // 7. Determine cost limit
   const costLimitUsd =
     options.costLimit === false ? null : config.costLimitUsd;
 
-  // 7. Run generate with progress display
+  // 8. Run generate with progress display
   console.log(`Topic: ${topic}`);
   console.log(`Backend: ${config.backend}`);
 
@@ -124,7 +133,7 @@ export async function runGenerateCommand(
     },
   );
 
-  // 8. Display results
+  // 9. Display results
   displayResults(result);
 }
 

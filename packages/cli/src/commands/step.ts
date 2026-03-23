@@ -39,10 +39,12 @@ import {
 } from "@groa/analyze";
 import { synthesize } from "@groa/synthesize";
 import { createEmbedder, generateEmbeddings } from "@groa/embed";
+import { join } from "node:path";
 import { loadConfig } from "./config.js";
 import { readJsonSource } from "./validate.js";
 import { validateTweets, createProgressDisplay } from "./build.js";
 import { ensureConsent } from "./consent.js";
+import { validateBuildName } from "./build-name.js";
 
 /**
  * キャッシュからステップの出力を読み込む。
@@ -75,6 +77,7 @@ const STEP_DEPENDENCIES: Record<BuildStepId, BuildStepId[]> = {
 export function stepCommand(): Command {
   return new Command("step")
     .description("個別ステップを実行する")
+    .argument("<name>", "ビルド名")
     .argument(
       "<stepName>",
       "ステップ名 (preprocess | stats | classify | analyze | synthesize | embed)",
@@ -85,13 +88,16 @@ export function stepCommand(): Command {
     )
     .action(
       async (
+        name: string,
         stepName: string,
         tweetsPath: string | undefined,
         _options: unknown,
         cmd: Command,
       ) => {
+        validateBuildName(name);
         const globalOpts = cmd.parent?.opts() ?? {};
         await runStepCommand(stepName, tweetsPath, {
+          name,
           backend: globalOpts.backend as string | undefined,
           force: globalOpts.force as boolean | undefined,
           costLimit: globalOpts.costLimit as boolean | undefined,
@@ -104,10 +110,11 @@ export async function runStepCommand(
   stepName: string,
   tweetsPath: string | undefined,
   options: {
+    name: string;
     backend?: string;
     force?: boolean;
     costLimit?: boolean;
-  } = {},
+  },
 ): Promise<void> {
   // 1. Validate step name
   if (!BUILD_STEP_ORDER.includes(stepName as BuildStepId)) {
@@ -123,7 +130,7 @@ export async function runStepCommand(
     config.backend = options.backend as BackendType;
   }
 
-  // 3. Ensure consent on LLM steps
+  // 3. Ensure consent on LLM steps (ベースの cacheDir で consent)
   const llmSteps: BuildStepId[] = [
     "classify",
     "analyze",
@@ -133,7 +140,10 @@ export async function runStepCommand(
     await ensureConsent(config.cacheDir);
   }
 
-  // 4. Set up cache and progress
+  // 4. Apply build name to cacheDir
+  config.cacheDir = join(config.cacheDir, options.name);
+
+  // 5. Set up cache and progress
   const cache = new StepCacheManager(config.cacheDir);
   const force = options.force ?? false;
   const costLimitUsd =
@@ -153,23 +163,23 @@ export async function runStepCommand(
     costLimitUsd,
   });
 
-  // 5. Validate dependencies are cached (except for preprocess)
+  // 6. Validate dependencies are cached (except for preprocess)
   const deps = STEP_DEPENDENCIES[step];
   for (const dep of deps) {
     const cached = await cache.read(dep);
     if (!cached) {
       throw new Error(
-        `${dep} の結果がありません。先に \`groa step ${dep}\` を実行してください。`,
+        `${dep} の結果がありません。先に \`groa step ${options.name} ${dep}\` を実行してください。`,
       );
     }
   }
 
-  // 6. Force invalidation of this step and downstream
+  // 7. Force invalidation of this step and downstream
   if (force) {
     await cache.invalidateFrom(step, [...BUILD_STEP_ORDER]);
   }
 
-  // 7. Execute the step
+  // 8. Execute the step
   const stepIndex = BUILD_STEP_ORDER.indexOf(step);
   await executeSingleStep(
     step,

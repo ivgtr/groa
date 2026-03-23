@@ -2,14 +2,17 @@ import { Command } from "commander";
 import { join } from "node:path";
 import { StepCacheManager } from "@groa/pipeline";
 import type { StepCache } from "@groa/pipeline";
+import { validateBuildName } from "./build-name.js";
 
 const DEFAULT_CACHE_DIR = ".groa";
 
 export function costCommand(): Command {
   return new Command("cost")
     .description("累計コストを表示する")
-    .action(async () => {
-      const result = await runCost();
+    .argument("<name>", "ビルド名")
+    .action(async (name: string) => {
+      validateBuildName(name);
+      const result = await runCost(name);
       console.log(result);
     });
 }
@@ -27,15 +30,16 @@ export interface CostSummary {
 }
 
 export async function runCost(
+  name: string,
   cwd = process.cwd(),
 ): Promise<string> {
-  const cacheDir = join(cwd, DEFAULT_CACHE_DIR);
+  const cacheDir = join(cwd, DEFAULT_CACHE_DIR, name);
   const cacheManager = new StepCacheManager(cacheDir);
 
   const stepNames = await cacheManager.listCachedSteps();
   if (stepNames.length === 0) {
     throw new Error(
-      `キャッシュが見つかりません。\n→ 先に \`groa build\` を実行してください。`,
+      `キャッシュが見つかりません。\n→ 先に \`groa build ${name} <tweets.json>\` を実行してください。`,
     );
   }
 

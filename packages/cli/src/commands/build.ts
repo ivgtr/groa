@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { join } from "node:path";
 import { TweetSchema } from "@groa/types";
 import type { Tweet } from "@groa/types";
 import type { BackendType } from "@groa/config";
@@ -16,6 +17,7 @@ import type { ConverterDefinition } from "@groa/convert";
 import { loadConfig } from "./config.js";
 import { readJsonSource } from "./validate.js";
 import { ensureConsent } from "./consent.js";
+import { validateBuildName } from "./build-name.js";
 
 /** 組み込みプリセット名 → ConverterDefinition */
 const FORMAT_PRESETS: Record<string, ConverterDefinition> = {
@@ -26,6 +28,7 @@ const FORMAT_PRESETS: Record<string, ConverterDefinition> = {
 export function buildCommand(): Command {
   return new Command("build")
     .description("ツイートデータからプロファイルを構築する (Step 0-5)")
+    .argument("<name>", "ビルド名")
     .argument("<tweets>", "ツイートデータのファイルパスまたはURL (.json, .js)")
     .option("--format <name>", "入力フォーマットを指定する (twint, twitter-archive)")
     .option("--map-id <key>", "id フィールドのソースキー")
@@ -34,9 +37,11 @@ export function buildCommand(): Command {
     .option("--map-retweet <key>", "isRetweet フィールドのソースキー")
     .option("--map-media <key>", "hasMedia フィールドのソースキー")
     .option("--map-reply <key>", "replyTo フィールドのソースキー")
-    .action(async (tweetsPath: string, options: Record<string, unknown>, cmd: Command) => {
+    .action(async (name: string, tweetsPath: string, options: Record<string, unknown>, cmd: Command) => {
+      validateBuildName(name);
       const globalOpts = cmd.parent?.opts() ?? {};
       await runBuildCommand(tweetsPath, {
+        name,
         backend: globalOpts.backend as string | undefined,
         force: globalOpts.force as boolean | undefined,
         costLimit: globalOpts.costLimit as boolean | undefined,
@@ -54,6 +59,7 @@ export function buildCommand(): Command {
 export async function runBuildCommand(
   tweetsPath: string,
   options: {
+    name: string;
     backend?: string;
     force?: boolean;
     costLimit?: boolean;
@@ -64,7 +70,7 @@ export async function runBuildCommand(
     mapRetweet?: string;
     mapMedia?: string;
     mapReply?: string;
-  } = {},
+  },
 ): Promise<void> {
   // 1. Load config
   const config = await loadConfig();
@@ -84,16 +90,19 @@ export async function runBuildCommand(
   // 4. Show backend info
   console.log(`Backend: ${config.backend}`);
 
-  // 5. Ensure consent for data sending
+  // 5. Ensure consent for data sending (ベースの cacheDir で consent)
   if (config.backend === "anthropic" || config.backend === "openrouter") {
     await ensureConsent(config.cacheDir);
   }
 
-  // 6. Determine cost limit
+  // 6. Apply build name to cacheDir
+  config.cacheDir = join(config.cacheDir, options.name);
+
+  // 7. Determine cost limit
   const costLimitUsd =
     options.costLimit === false ? null : config.costLimitUsd;
 
-  // 7. Run build with progress display
+  // 8. Run build with progress display
   await runBuild(config, tweets, {
     onProgress: createProgressDisplay({
       stepNames: {
