@@ -103,6 +103,7 @@ function createMockBackend(
   return {
     calls,
     backendType: () => "anthropic" as const,
+    getWarnings: () => [],
     complete: async (request: LlmRequest): Promise<LlmResponse> => {
       calls.push(request);
       const partial = responseFn(request);

@@ -53,6 +53,10 @@ export class OpenRouterBackend implements LlmBackend {
     return "openrouter";
   }
 
+  getWarnings(): string[] {
+    return [];
+  }
+
   async complete(request: LlmRequest): Promise<LlmResponse> {
     return withRetry(() => this.sendRequest(request), {
       maxRetries: 3,

@@ -31,6 +31,7 @@ export class ClaudeCodeBackend implements LlmBackend {
   private readonly claudePath: string;
   private readonly modelId: string;
   private readonly warnings: string[] = [];
+  private readonly emittedWarningTypes = new Set<string>();
 
   constructor(config: ResolvedStepConfig) {
     const claudeCodeParams = config.params as {
@@ -49,25 +50,30 @@ export class ClaudeCodeBackend implements LlmBackend {
     return [...this.warnings];
   }
 
+  private addWarningOnce(message: string): void {
+    if (!this.emittedWarningTypes.has(message)) {
+      this.emittedWarningTypes.add(message);
+      this.warnings.push(message);
+    }
+  }
+
   async complete(request: LlmRequest): Promise<LlmResponse> {
     if (request.options.useBatch) {
-      const msg =
-        "Claude Code バックエンドは Batch API に対応していません。逐次実行にフォールバックします。";
-      this.warnings.push(msg);
-      console.warn(msg);
+      this.addWarningOnce(
+        "Claude Code バックエンドは Batch API に対応していません。逐次実行にフォールバックします。",
+      );
     }
 
     if (request.options.useCache) {
-      const msg =
-        "Claude Code バックエンドでは Prompt Caching を明示的に制御できません。";
-      this.warnings.push(msg);
-      console.warn(msg);
+      this.addWarningOnce(
+        "Claude Code バックエンドでは Prompt Caching を明示的に制御できません。",
+      );
     }
 
     if (request.options.temperature !== 0) {
-      const msg = `Claude Code バックエンドでは temperature (${request.options.temperature}) を指定できません。無視されます。`;
-      this.warnings.push(msg);
-      console.info(msg);
+      this.addWarningOnce(
+        `Claude Code バックエンドでは temperature (${request.options.temperature}) を指定できません。無視されます。`,
+      );
     }
 
     return withRetry(() => this.executeCommand(request), {

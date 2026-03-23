@@ -34,6 +34,7 @@ export interface LlmResponse {
 export interface LlmBackend {
   complete(request: LlmRequest): Promise<LlmResponse>;
   backendType(): BackendType;
+  getWarnings(): string[];
 }
 
 // --- Validation fallback callback ---

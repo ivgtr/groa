@@ -95,6 +95,7 @@ function createMockBackend(
   return {
     calls,
     backendType: () => backendTypeValue,
+    getWarnings: () => [],
     complete: async (request: LlmRequest): Promise<LlmResponse> => {
       calls.push(request);
       return { ...defaultResponse, ...responseFn(request) };

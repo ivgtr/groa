@@ -72,6 +72,10 @@ export class AnthropicBackend implements LlmBackend {
     return "anthropic";
   }
 
+  getWarnings(): string[] {
+    return [];
+  }
+
   async complete(request: LlmRequest): Promise<LlmResponse> {
     return withRetry(
       () => this.sendRequest(request),
