@@ -27,7 +27,7 @@ const FORMAT_PRESETS: Record<string, ConverterDefinition> = {
 
 export function buildCommand(): Command {
   return new Command("build")
-    .description("ツイートデータからプロファイルを構築する (Step 0-5)")
+    .description("テキストデータからプロファイルを構築する (Step 0-5)")
     .argument("<name>", "ビルド名")
     .argument("<tweets>", "ツイートデータのファイルパスまたはURL (.json, .js)")
     .option("--format <name>", "入力フォーマットを指定する (twint, twitter-archive)")

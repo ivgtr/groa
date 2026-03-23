@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**groa** はツイートデータから人格プロファイルを抽出し、その人物「らしい」テキストを生成する8段階パイプラインツール。
+**groa** はテキストから人格を抽出し、その人物として語らせ、会話させるペルソナ再現ツール。
 統計的文体分析（ローカル）とLLM意味理解のハイブリッド構成。TypeScript モノレポ（pnpm workspace）。
 
 ## Architecture

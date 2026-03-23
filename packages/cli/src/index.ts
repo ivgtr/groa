@@ -13,7 +13,7 @@ export function createProgram(): Command {
   const program = new Command()
     .name("groa")
     .description(
-      "ツイートデータから人格プロファイルを抽出し「らしい」テキストを生成するツール",
+      "テキストから人格を抽出し、その人物として語らせ、会話させるペルソナ再現ツール",
     )
     .version("0.1.0")
     .option("--backend <type>", "バックエンド種別 (anthropic | openrouter | claude-code)")

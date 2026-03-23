@@ -1,7 +1,7 @@
 {
   "name": "groa",
   "version": "0.1.0",
-  "description": "ツイートデータから人格プロファイルを抽出し、その人物「らしい」テキストを生成するパイプラインツール",
+  "description": "テキストから人格を抽出し、その人物として語らせ、会話させるペルソナ再現ツール",
   "private": true,
   "license": "MIT",
   "author": "ivgtr",

@@ -15,7 +15,7 @@ export function App() {
         <div className="max-w-4xl mx-auto px-4 py-4">
           <h1 className="text-xl font-bold text-gray-900">groa</h1>
           <p className="text-sm text-gray-500">
-            ツイートデータから人格プロファイルを抽出し「らしい」テキストを生成する
+            テキストから人格を抽出し、その人物として語らせ、会話させる
           </p>
         </div>
       </header>
