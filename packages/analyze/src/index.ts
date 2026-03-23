@@ -16,3 +16,8 @@ export type { AnalyzeOptions } from "./analyze.js";
 
 export { buildAnalyzePrompt, ANALYZE_SYSTEM_PROMPT } from "./analyze-prompt.js";
 export { parseAnalyzeResponse } from "./analyze-parse.js";
+
+export {
+  mergeClusterAnalyses,
+  groupAnalysesByCategory,
+} from "./merge-clusters.js";
