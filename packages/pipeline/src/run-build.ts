@@ -32,6 +32,7 @@ import {
   buildClusters,
   computeAllClusterStats,
   analyzeClusters,
+  mergeClusterAnalyses,
 } from "@groa/analyze";
 import { synthesize } from "@groa/synthesize";
 import { createEmbedder, generateEmbeddings } from "@groa/embed";
@@ -179,13 +180,15 @@ export async function runBuild(
     cache,
     progress,
     force,
-    () => cache.computeHash({ taggedTweets, styleStats }),
+    // _v: 2 — mergeClusterAnalyses 追加に伴い旧キャッシュを無効化
+    () => cache.computeHash({ taggedTweets, styleStats, _v: 2 }),
     async () => {
       const resolved = resolveStepConfig(config, "analyze");
       const backend = createLlmBackend(resolved);
       const clusters = buildClusters(taggedTweets);
       const clustersWithStats = await computeAllClusterStats(clusters);
-      return analyzeClusters(clustersWithStats, backend);
+      const rawAnalyses = await analyzeClusters(clustersWithStats, backend);
+      return mergeClusterAnalyses(rawAnalyses, backend);
     },
     null,
   );

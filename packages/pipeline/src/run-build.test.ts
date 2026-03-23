@@ -48,11 +48,13 @@ vi.mock("@groa/classify", () => ({
 const mockBuildClusters = vi.fn<(tagged: TaggedTweet[]) => TopicCluster[]>();
 const mockComputeAllClusterStats = vi.fn();
 const mockAnalyzeClusters = vi.fn<(...args: unknown[]) => Promise<ClusterAnalysis[]>>();
+const mockMergeClusterAnalyses = vi.fn<(...args: unknown[]) => Promise<ClusterAnalysis[]>>();
 
 vi.mock("@groa/analyze", () => ({
   buildClusters: (...args: unknown[]) => mockBuildClusters(...args as [TaggedTweet[]]),
   computeAllClusterStats: (...args: unknown[]) => mockComputeAllClusterStats(...args),
   analyzeClusters: (...args: unknown[]) => mockAnalyzeClusters(...args),
+  mergeClusterAnalyses: (...args: unknown[]) => mockMergeClusterAnalyses(...args),
 }));
 
 const mockSynthesize = vi.fn<(...args: unknown[]) => Promise<PersonaDocument>>();
@@ -202,6 +204,9 @@ function setupAllMocks(): void {
   mockBuildClusters.mockReturnValue([]);
   mockComputeAllClusterStats.mockResolvedValue([]);
   mockAnalyzeClusters.mockResolvedValue(MOCK_ANALYSES);
+  mockMergeClusterAnalyses.mockImplementation(
+    async (analyses: unknown) => analyses as ClusterAnalysis[],
+  );
 
   // synthesize
   mockSynthesize.mockResolvedValue(MOCK_PERSONA);
