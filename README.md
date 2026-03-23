@@ -26,7 +26,7 @@ groa は 3つのバックエンドに対応しています。
 pnpm groa init
 ```
 
-対話形式でバックエンド種別とモデルを設定し、`groa.json` を生成します。
+対話形式でバックエンド種別とモデルを設定し、`groa.config.json` を生成します。
 非対話モードで実行する場合は `--backend` フラグを指定してください。
 
 #### anthropic バックエンド（推奨）
@@ -43,7 +43,7 @@ pnpm groa init --backend anthropic
 export ANTHROPIC_API_KEY=sk-ant-api03-...
 ```
 
-または `groa.json` の `apiKeys.anthropic` に環境変数参照を記述できます（デフォルト設定）:
+または `groa.config.json` の `apiKeys.anthropic` に環境変数参照を記述できます（デフォルト設定）:
 
 ```json
 {
@@ -65,7 +65,7 @@ pnpm groa init --backend claude-code
 - `claude` コマンドが PATH 上に存在すること
 - Claude Code の認証が完了していること
 
-既に `groa.json` がある場合は、以下のコマンドでバックエンドを切り替えできます:
+既に `groa.config.json` がある場合は、以下のコマンドでバックエンドを切り替えできます:
 
 ```bash
 pnpm groa config set backend claude-code
@@ -162,7 +162,7 @@ pnpm groa config                        # 現在の設定を表示
 | プロファイル構築 | ~$2.33（Batch API不可のため約7%増） |
 | 100件生成+評価 | ~$3.05（Prompt Caching効果が不確実） |
 
-コスト上限はデフォルト $10.0 です。`groa.json` の `costLimitUsd` で変更できます。
+コスト上限はデフォルト $10.0 です。`groa.config.json` の `costLimitUsd` で変更できます。
 
 ## ツイートデータのフォーマット
 
@@ -252,7 +252,7 @@ pnpm groa build tweets.js
 
 - API キーは中間結果の JSON ファイルに書き出されません
 - ログ出力時、API キーや認証ヘッダの値は自動的にマスクされます
-- `groa.json` に API キーを直接記述した場合、Unix 環境でファイルパーミッションが 0600 以外なら警告が表示されます
+- `groa.config.json` に API キーを直接記述した場合、Unix 環境でファイルパーミッションが 0600 以外なら警告が表示されます
 
 ### .groa/ ディレクトリについて
 

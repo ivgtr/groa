@@ -537,7 +537,7 @@ const BACKEND_TIER_DEFAULTS: Record<BackendType, Record<ModelTier, string | null
 };
 ```
 
-`claude-code` バックエンドではモデル未設定時に `CLAUDE_CODE_TIER_DEFAULTS` からフォールバックする。`anthropic` / `openrouter` バックエンドでは `groa.json` の `models` 設定が必須。
+`claude-code` バックエンドではモデル未設定時に `CLAUDE_CODE_TIER_DEFAULTS` からフォールバックする。`anthropic` / `openrouter` バックエンドでは `groa.config.json` の `models` 設定が必須。
 
 ### 3.2 LlmBackend / LlmRequest / LlmResponse インターフェース
 
@@ -777,7 +777,7 @@ const normalizers: TextNormalizer[] = [
 - URL除去: `/https?:\/\/\S+/g`
 - メンション除去: `/@\w+/g`
 - 空白正規化: `/\s+/g`
-- ボイラーパターンはユーザー設定で追加可能（`groa.json` の `steps.preprocess.boilerplatePatterns`）
+- ボイラーパターンはユーザー設定で追加可能（`groa.config.json` の `steps.preprocess.boilerplatePatterns`）
 
 #### preprocess 関数シグネチャ
 
@@ -1049,7 +1049,7 @@ interface GenerateParams {
 #### 合格判定ロジック
 
 - `authenticity >= 6.0` を合格とし、それ未満は再生成候補としてマークする
-- しきい値は `groa.json` の `steps.evaluate.threshold` で変更可能
+- しきい値は `groa.config.json` の `steps.evaluate.threshold` で変更可能
 
 #### 評価用ツイートの選定
 
@@ -1118,7 +1118,7 @@ interface PipelineCostSummary {
 
 > 対応する要件: spec.md §8
 
-### 6.1 groa.json の完全スキーマ
+### 6.1 groa.config.json の完全スキーマ
 
 ```json
 {
