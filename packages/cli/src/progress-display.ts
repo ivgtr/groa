@@ -1,10 +1,15 @@
 import { clearLine, cursorTo } from "node:readline";
-import type { StepEvent } from "@groa/pipeline";
+import type { StepEvent, StepTokenUsage } from "@groa/pipeline";
 
 export interface ProgressDisplayOptions {
   stepNames: Record<string, string>;
   stepIndexOffset?: number;
   pipelineCompleteMessage?: string;
+}
+
+/** トークン数をカンマ区切りでフォーマットする */
+function formatTokens(usage: StepTokenUsage): string {
+  return `[in: ${usage.inputTokens.toLocaleString()} / out: ${usage.outputTokens.toLocaleString()}]`;
 }
 
 export function createProgressDisplay(
@@ -45,26 +50,49 @@ export function createProgressDisplay(
         }
         break;
 
-      case "step-complete":
+      case "step-complete": {
         if (lineBroken && isTTY) {
           clearLine(process.stdout, 0);
           cursorTo(process.stdout, 0);
         }
+        // コスト > 0: コスト表示、コスト 0 + トークンあり: トークン表示
+        const stepDisplay =
+          event.costUsd > 0
+            ? `[$${event.costUsd.toFixed(2)}]`
+            : event.tokenUsage &&
+                (event.tokenUsage.inputTokens > 0 || event.tokenUsage.outputTokens > 0)
+              ? formatTokens(event.tokenUsage)
+              : `[$${event.costUsd.toFixed(2)}]`;
+
         if (lineBroken) {
-          console.log(`  [$${event.costUsd.toFixed(2)}]`);
+          console.log(`  ${stepDisplay}`);
         } else {
-          console.log(` [$${event.costUsd.toFixed(2)}]`);
+          console.log(` ${stepDisplay}`);
         }
         lineBroken = false;
         break;
+      }
 
-      case "pipeline-complete":
+      case "pipeline-complete": {
         if (pipelineCompleteMessage) {
-          console.log(
-            `${pipelineCompleteMessage} Total cost: $${event.totalCostUsd.toFixed(2)}`,
-          );
+          const tu = event.totalTokenUsage;
+          if (event.totalCostUsd > 0) {
+            console.log(
+              `${pipelineCompleteMessage} Total cost: $${event.totalCostUsd.toFixed(2)}`,
+            );
+          } else if (tu && (tu.inputTokens > 0 || tu.outputTokens > 0)) {
+            const total = tu.inputTokens + tu.outputTokens;
+            console.log(
+              `${pipelineCompleteMessage} Total: ${total.toLocaleString()} tokens (in: ${tu.inputTokens.toLocaleString()} / out: ${tu.outputTokens.toLocaleString()})`,
+            );
+          } else {
+            console.log(
+              `${pipelineCompleteMessage} Total cost: $${event.totalCostUsd.toFixed(2)}`,
+            );
+          }
         }
         break;
+      }
 
       case "cost-limit-exceeded":
         console.error(

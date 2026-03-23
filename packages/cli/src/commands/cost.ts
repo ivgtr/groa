@@ -14,8 +14,15 @@ export function costCommand(): Command {
     });
 }
 
+export interface CostStepSummary {
+  stepName: string;
+  costUsd: number;
+  inputTokens: number;
+  outputTokens: number;
+}
+
 export interface CostSummary {
-  steps: Array<{ stepName: string; costUsd: number }>;
+  steps: CostStepSummary[];
   totalUsd: number;
 }
 
@@ -40,13 +47,15 @@ export async function collectCostSummary(
   cacheManager: StepCacheManager,
   stepNames: string[],
 ): Promise<CostSummary> {
-  const steps: Array<{ stepName: string; costUsd: number }> = [];
+  const steps: CostStepSummary[] = [];
   let totalUsd = 0;
 
   for (const stepName of stepNames) {
     const cached: StepCache | null = await cacheManager.read(stepName);
     const costUsd = cached?.cost?.estimatedUsd ?? 0;
-    steps.push({ stepName, costUsd });
+    const inputTokens = cached?.cost?.inputTokens ?? 0;
+    const outputTokens = cached?.cost?.outputTokens ?? 0;
+    steps.push({ stepName, costUsd, inputTokens, outputTokens });
     totalUsd += costUsd;
   }
 
@@ -57,9 +66,35 @@ function formatCostSummary(summary: CostSummary): string {
   const lines: string[] = [];
 
   for (const step of summary.steps) {
-    lines.push(`  ${step.stepName}: $${step.costUsd.toFixed(4)}`);
+    const totalTokens = step.inputTokens + step.outputTokens;
+    if (step.costUsd > 0) {
+      lines.push(`  ${step.stepName}: $${step.costUsd.toFixed(4)}`);
+    } else if (totalTokens > 0) {
+      lines.push(
+        `  ${step.stepName}: ${totalTokens.toLocaleString()} tokens (in: ${step.inputTokens.toLocaleString()} / out: ${step.outputTokens.toLocaleString()})`,
+      );
+    } else {
+      lines.push(`  ${step.stepName}: $${step.costUsd.toFixed(4)}`);
+    }
   }
 
-  lines.push(`\n合計: $${summary.totalUsd.toFixed(4)}`);
+  if (summary.totalUsd > 0) {
+    lines.push(`\n合計: $${summary.totalUsd.toFixed(4)}`);
+  } else {
+    const totalTokens = summary.steps.reduce(
+      (sum, s) => sum + s.inputTokens + s.outputTokens,
+      0,
+    );
+    if (totalTokens > 0) {
+      const totalIn = summary.steps.reduce((sum, s) => sum + s.inputTokens, 0);
+      const totalOut = summary.steps.reduce((sum, s) => sum + s.outputTokens, 0);
+      lines.push(
+        `\n合計: ${totalTokens.toLocaleString()} tokens (in: ${totalIn.toLocaleString()} / out: ${totalOut.toLocaleString()})`,
+      );
+    } else {
+      lines.push(`\n合計: $${summary.totalUsd.toFixed(4)}`);
+    }
+  }
+
   return lines.join("\n");
 }

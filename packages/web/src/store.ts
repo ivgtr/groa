@@ -5,6 +5,7 @@ export interface BuildStep {
   name: string;
   status: "pending" | "running" | "done" | "error";
   costUsd: number;
+  tokenUsage?: { inputTokens: number; outputTokens: number };
 }
 
 export interface GenerationResult {

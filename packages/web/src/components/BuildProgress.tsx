@@ -107,10 +107,16 @@ function StepRow({ step }: { step: BuildStep }) {
           {label}
         </span>
       </div>
-      {step.status === "done" && step.costUsd > 0 && (
-        <span className="text-xs text-gray-500">
-          ${step.costUsd.toFixed(2)}
-        </span>
+      {step.status === "done" && (
+        step.costUsd > 0 ? (
+          <span className="text-xs text-gray-500">
+            ${step.costUsd.toFixed(2)}
+          </span>
+        ) : step.tokenUsage && (step.tokenUsage.inputTokens > 0 || step.tokenUsage.outputTokens > 0) ? (
+          <span className="text-xs text-gray-500">
+            in: {step.tokenUsage.inputTokens.toLocaleString()} / out: {step.tokenUsage.outputTokens.toLocaleString()}
+          </span>
+        ) : null
       )}
     </div>
   );
@@ -138,13 +144,32 @@ export function BuildProgress() {
         </div>
       )}
 
-      {(allDone || hasError) && totalCostUsd > 0 && (
-        <div className="flex justify-end">
-          <span className="text-sm text-gray-600">
-            合計コスト: <span className="font-medium">${totalCostUsd.toFixed(2)}</span>
-          </span>
-        </div>
-      )}
+      {(allDone || hasError) && (() => {
+        const totalIn = buildSteps.reduce((s, st) => s + (st.tokenUsage?.inputTokens ?? 0), 0);
+        const totalOut = buildSteps.reduce((s, st) => s + (st.tokenUsage?.outputTokens ?? 0), 0);
+        const totalTokens = totalIn + totalOut;
+
+        if (totalCostUsd > 0) {
+          return (
+            <div className="flex justify-end">
+              <span className="text-sm text-gray-600">
+                合計コスト: <span className="font-medium">${totalCostUsd.toFixed(2)}</span>
+              </span>
+            </div>
+          );
+        }
+        if (totalTokens > 0) {
+          return (
+            <div className="flex justify-end">
+              <span className="text-sm text-gray-600">
+                合計: <span className="font-medium">{totalTokens.toLocaleString()} tokens</span>
+                {" "}(in: {totalIn.toLocaleString()} / out: {totalOut.toLocaleString()})
+              </span>
+            </div>
+          );
+        }
+        return null;
+      })()}
 
       {allDone && (
         <div className="rounded-md border border-green-300 bg-green-50 p-4">
