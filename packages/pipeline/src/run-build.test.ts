@@ -68,6 +68,7 @@ const mockGenerateEmbeddings = vi.fn<(...args: unknown[]) => Promise<EmbeddingIn
 vi.mock("@groa/embed", () => ({
   createEmbedder: () => mockCreateEmbedder(),
   generateEmbeddings: (...args: unknown[]) => mockGenerateEmbeddings(...args),
+  deserializeEmbeddingIndex: (data: unknown) => data,
 }));
 
 const mockCreateLlmBackend = vi.fn();

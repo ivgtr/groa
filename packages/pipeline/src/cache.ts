@@ -4,6 +4,7 @@ import { join } from "node:path";
 import type { Timestamp } from "@groa/types";
 import { Timestamp as toTimestamp } from "@groa/types";
 import type { CostRecord } from "@groa/llm-client";
+import { stripSensitiveData, assertNoApiKeys } from "./sanitize.js";
 
 /** キャッシュに保存されるステップの中間結果 */
 export interface StepCache {
@@ -23,11 +24,17 @@ interface StepCacheFile {
 
 const CACHE_FILE_SUFFIX = ".json";
 
-/** APIキーとして検出するパターン */
-const API_KEY_PATTERNS = [
-  /sk-ant-/i,
-  /sk-[a-zA-Z0-9]{20,}/,
-];
+/**
+ * JSON.stringify の replacer。
+ * Float32Array 等の TypedArray を number[] に変換し、正しくシリアライズする。
+ */
+function typedArrayReplacer(_key: string, value: unknown): unknown {
+  if (ArrayBuffer.isView(value) && !(value instanceof DataView)) {
+    return Array.from(value as unknown as ArrayLike<number>);
+  }
+  return value;
+}
+
 
 /**
  * 中間結果の永続化・入力ハッシュスキップを管理する。
@@ -42,8 +49,8 @@ export class StepCacheManager {
    * API キーはハッシュ対象から除外する。
    */
   computeHash(input: unknown): string {
-    const sanitized = this.stripSensitiveData(input);
-    const json = JSON.stringify(sanitized, null, 0);
+    const sanitized = stripSensitiveData(input);
+    const json = JSON.stringify(sanitized, typedArrayReplacer, 0);
     return createHash("sha256").update(json).digest("hex");
   }
 
@@ -90,7 +97,7 @@ export class StepCacheManager {
   ): Promise<void> {
     await mkdir(this.cacheDir, { recursive: true });
 
-    const sanitizedOutput = this.stripSensitiveData(output);
+    const sanitizedOutput = stripSensitiveData(output);
 
     const data: StepCacheFile = {
       inputHash,
@@ -99,8 +106,8 @@ export class StepCacheManager {
       cost,
     };
 
-    const json = JSON.stringify(data, null, 2);
-    this.assertNoApiKeys(json, stepName);
+    const json = JSON.stringify(data, typedArrayReplacer, 2);
+    assertNoApiKeys(json, `キャッシュ (step: ${stepName})`);
 
     await writeFile(this.filePath(stepName), json, "utf-8");
   }
@@ -156,43 +163,4 @@ export class StepCacheManager {
     return join(this.cacheDir, `${stepName}${CACHE_FILE_SUFFIX}`);
   }
 
-  /**
-   * オブジェクトからAPIキー等の機密データを除去する。
-   * apiKey, api_key, apiKeys 等のフィールドを再帰的に "[REDACTED]" に置換する。
-   */
-  private stripSensitiveData(data: unknown): unknown {
-    if (data === null || data === undefined) return data;
-    if (typeof data !== "object") return data;
-
-    if (Array.isArray(data)) {
-      return data.map((item) => this.stripSensitiveData(item));
-    }
-
-    const result: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(
-      data as Record<string, unknown>,
-    )) {
-      if (/api_?key/i.test(key)) {
-        result[key] = "[REDACTED]";
-      } else {
-        result[key] = this.stripSensitiveData(value);
-      }
-    }
-    return result;
-  }
-
-  /**
-   * JSON文字列にAPIキーパターンが含まれていないことを検証する。
-   * 含まれていた場合、エラーをスローして書き込みを中止する。
-   */
-  private assertNoApiKeys(json: string, stepName: string): void {
-    for (const pattern of API_KEY_PATTERNS) {
-      if (pattern.test(json)) {
-        throw new Error(
-          `キャッシュにAPIキーが含まれています (step: ${stepName})。` +
-            `出力データからAPIキーを除去してください。`,
-        );
-      }
-    }
-  }
 }

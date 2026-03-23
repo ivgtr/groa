@@ -35,7 +35,7 @@ import {
   mergeClusterAnalyses,
 } from "@groa/analyze";
 import { synthesize } from "@groa/synthesize";
-import { createEmbedder, generateEmbeddings } from "@groa/embed";
+import { createEmbedder, generateEmbeddings, deserializeEmbeddingIndex } from "@groa/embed";
 import { StepCacheManager } from "./cache.js";
 import { PipelineProgress } from "./progress.js";
 import type { ProgressCallback, StepTokenUsage } from "./progress.js";
@@ -243,7 +243,9 @@ export async function runBuild(
   );
 
   // --- Step 5: embed ---
-  const embeddingIndex = await executeStep<EmbeddingIndex>(
+  // executeStep は JSON.parse 経由で vector が number[] になる場合がある（キャッシュヒット時）。
+  // deserializeEmbeddingIndex で number[] → Float32Array の復元を保証する。
+  const rawEmbedding = await executeStep<unknown>(
     "embed",
     5,
     cache,
@@ -255,6 +257,7 @@ export async function runBuild(
       return generateEmbeddings(corpus, embedder);
     },
   );
+  const embeddingIndex = deserializeEmbeddingIndex(rawEmbedding);
 
   progress.pipelineComplete();
 

@@ -114,7 +114,32 @@ describe("APIキー保護", () => {
     const output = { token: "sk-ant-api03-leaked-key-value" };
     await expect(
       manager.write("step3", "hash", output),
-    ).rejects.toThrow("キャッシュにAPIキーが含まれています");
+    ).rejects.toThrow("APIキーが含まれています");
+  });
+});
+
+describe("TypedArray シリアライズ", () => {
+  it("Float32Array を含む出力が number[] 形式で保存される", async () => {
+    const output = {
+      embeddings: [
+        { tweetId: "t1", vector: new Float32Array([0.1, 0.2, 0.3]), dimensions: 3 },
+      ],
+      model: "test-model",
+    };
+    await manager.write("embed", "hash", output);
+
+    const content = await readFile(join(cacheDir, "embed.json"), "utf-8");
+    const parsed = JSON.parse(content) as { output: { embeddings: Array<{ vector: number[] }> } };
+    const vector = parsed.output.embeddings[0]!.vector;
+    expect(Array.isArray(vector)).toBe(true);
+    expect(vector).toHaveLength(3);
+    expect(vector[0]).toBeCloseTo(0.1);
+  });
+
+  it("computeHash が Float32Array と等値な number[] に対して同一ハッシュを返す", () => {
+    const withTypedArray = { vector: new Float32Array([1, 2, 3]) };
+    const withArray = { vector: [1, 2, 3] };
+    expect(manager.computeHash(withTypedArray)).toBe(manager.computeHash(withArray));
   });
 });
 
