@@ -3,6 +3,16 @@
   "version": "0.1.0",
   "description": "ツイートデータから人格プロファイルを抽出し、その人物「らしい」テキストを生成するパイプラインツール",
   "private": true,
+  "license": "MIT",
+  "author": "ivgtr",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ivgtr/groa.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ivgtr/groa/issues"
+  },
+  "homepage": "https://github.com/ivgtr/groa#readme",
   "type": "module",
   "engines": {
     "node": ">=22.0.0"
